@@ -1,0 +1,32 @@
+{
+  "name": "@cyon/eremite.js",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/cyon/eremite.js.git"
+  },
+  "author": "Max Gfeller <mg@cyon.ch>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cyon/eremite.js/issues"
+  },
+  "homepage": "https://github.com/cyon/eremite.js#readme",
+  "devDependencies": {
+    "@types/jest": "^27.0.1",
+    "eslint": "^7.32.0",
+    "eslint-config-standard-with-typescript": "^21.0.1",
+    "ts-jest": "^27.0.5",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.3"
+  },
+  "dependencies": {
+    "@vue/reactivity": "^3.2.11",
+    "@vue/runtime-core": "^3.2.11",
+    "eventemitter3": "^4.0.7"
+  }
+}
