@@ -1,6 +1,6 @@
 import { mutationKey } from '../Resource'
 
-export function Queueable () {
+export function Queueable (fn?: ({ pendingActions: Array<{}>, setDependency: (id: string) => void })) {
   return (target: any, key: string, descriptor: PropertyDescriptor) => {
     const propertyDescriptor = Object.getOwnPropertyDescriptor(target, mutationKey)
     if (!propertyDescriptor) throw new Error('No property descriptor found.')
@@ -9,14 +9,7 @@ export function Queueable () {
     const fn = descriptor.value
 
     descriptor.value = function (...args: any[]) {
-      const oldDescriptor = Object.getOwnPropertyDescriptor(descriptor.value, mutationKey)
-      if (oldDescriptor) {
-        oldDescriptor.value.parameters = args
-      }
-
-      return target.queueAction(() => {
-        return fn.apply(target, args)
-      })
+      return target.queueAction.call(this, key, args)
     }
 
     Object.defineProperty(descriptor.value, mutationKey, {
@@ -24,6 +17,13 @@ export function Queueable () {
         fn: mutationFn
       },
       writable: true,
+      enumerable: false,
+      configurable: false
+    })
+
+    Object.defineProperty(descriptor.value, 'originalFn', {
+      value: fn,
+      writable: false,
       enumerable: false,
       configurable: false
     })
