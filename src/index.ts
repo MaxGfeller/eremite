@@ -1,7 +1,8 @@
 export {
   MutationState,
   Mutation,
-  Resource
+  Resource,
+  useContext
 } from './Resource'
 export {
   Mutate
@@ -9,3 +10,16 @@ export {
 export {
   Queueable
 } from './decorators/Queueable'
+export {
+  ConnectionIndicator
+} from './ConnectionIndicator'
+export {
+  BrowserConnectionIndicator
+} from './BrowserConnectionIndicator'
+export {
+  ActionQueue
+} from './ActionQueue'
+export {
+  Identifier
+} from './Eremite'
+export { TemporaryIdentifier, createTemporaryIdentifier } from './TemporaryIdentifier'
