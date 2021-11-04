@@ -1,6 +1,9 @@
 import { mutationKey } from '../Resource'
 
-export function Mutate<T extends Object> (fn: (opts: { state: T }) => void) {
+export function Mutate<T extends Object> (fn: (opts: {
+  state: T
+  mutateResourceState: (resource: string, fn: (state: any) => void) => void
+}, ...parameters: any[]) => void) {
   return (target: any, key: string, descriptor: PropertyDescriptor) => {
     Object.defineProperty(target, mutationKey, {
       value: {
