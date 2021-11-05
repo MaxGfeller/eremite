@@ -143,19 +143,15 @@ export class ActionQueue extends EventEmitter {
     this.#actionIdPromiseMapping[actionQueueItem.actionId] = (async () => {
       let actionResult
       try {
-        actionResult = await this.executeAction(actionQueueItem)
+        actionResult = await this.executeAction({ ...actionQueueItem, parameters: this.processParameters(actionQueueItem.parameters) })
         if (actionResult.mutation.getState() === MutationState.cancelled) {
           this.cancelMutation(actionQueueItem.actionId as string, actionQueueItem.resource)
         } else {
           this.commitMutation(actionQueueItem.actionId as string, actionQueueItem.resource, actionQueueItem.action, actionResult.mutation.getParameters())
         }
 
-        actionResult.mutation.getTemporaryIdentifiers().forEach((temporaryIdentifier) => {
-          if (!temporaryIdentifier.id) return
-
-          // todo: go through action queue and update all temporary ids
-          return true
-        })
+        const temporaryIdentifiers = actionResult.mutation.getTemporaryIdentifiers()
+        this.temporaryIdentifiers.push(...temporaryIdentifiers)
       } catch (err) {
         // todo: re-implement fail
         // this.fail(item.actionId, err)
@@ -164,11 +160,16 @@ export class ActionQueue extends EventEmitter {
       }
 
       await this.storeQueue.add(async () => {
-        const queue: ActionQueueItem[] = (await this.getItem('actionQueue')) || []
+        let queue: ActionQueueItem[] = (await this.getItem('actionQueue')) || []
         const index = queue.findIndex(item => item.actionId === actionQueueItem.actionId)
         if (index !== -1) {
           queue.splice(index, 1)
         }
+
+        queue = queue.map((actionQueueItem) => {
+          actionQueueItem.parameters = this.processParameters(actionQueueItem.parameters)
+          return actionQueueItem
+        })
 
         await this.setItem('actionQueue', queue)
       })
