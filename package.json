@@ -1,5 +1,5 @@
 {
-  "name": "@cyon/eremite.js",
+  "name": "@cyon/eremite",
   "version": "0.1.0",
   "description": "",
   "main": "dist/index.js",
@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/cyon/eremite.js.git"
+    "url": "git+ssh://git@github.com/cyon/eremite.git"
   },
   "author": "Max Gfeller <mg@cyon.ch>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/cyon/eremite.js/issues"
+    "url": "https://github.com/cyon/eremite/issues"
   },
-  "homepage": "https://github.com/cyon/eremite.js#readme",
+  "homepage": "https://github.com/cyon/eremite#readme",
   "devDependencies": {
     "@types/jest": "^27.0.1",
     "@types/uuid": "^8.3.1",
