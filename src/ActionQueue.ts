@@ -1,12 +1,13 @@
 import PQueue from 'p-queue'
 import { v4 as uuid } from 'uuid'
 import EventEmitter from 'eventemitter3'
-import { Mutation, MutationState } from '.'
+import { isTemporaryIdentifier, Mutation, MutationState } from '.'
+import { TemporaryIdentifier } from './Resource'
 
-export interface TemporaryIdentifier {
-  temporaryId: string
-  id?: any
-}
+// export interface TemporaryIdentifier {
+//   temporaryId: string
+//   id?: any
+// }
 
 export interface ActionQueueItem {
   actionId?: string
@@ -27,9 +28,11 @@ export class ActionQueue extends EventEmitter {
   protected getItem: (name: string) => Promise<any>
   protected setItem: (name: string, value: any) => Promise<void>
   protected applyMutation: (actionId: string, resource: string, action: string, parameters: any[]) => void
+  protected updateMutation: (actionId: string, resource: string, parameters: any[]) => void
   protected commitMutation: (actionId: string, resource: string, action: string, parameters: any[]) => void
   protected cancelMutation: (actionId: string, resource: string) => void
-  // #tmpIdMapping: { [key: string]: Identifier } = {}
+
+  protected temporaryIdentifiers: TemporaryIdentifier[] = []
   #actionIdPromiseMapping: { [key: string]: Promise<any> } = {}
 
   constructor (opts: {
@@ -37,6 +40,7 @@ export class ActionQueue extends EventEmitter {
     getItem: (name: string) => Promise<any>
     setItem: (name: string, value: any) => Promise<void>
     applyMutation: (actionId: string, resource: string, action: string, parameters: any[]) => void
+    updateMutation: (actionId: string, resource: string, parameters: any[]) => void
     commitMutation: (actionId: string, resource: string, action: string, parameters: any[]) => void
     cancelMutation: (actionId: string, resource: string) => void
     concurrency?: number
@@ -47,6 +51,7 @@ export class ActionQueue extends EventEmitter {
     this.getItem = opts.getItem
     this.setItem = opts.setItem
     this.applyMutation = opts.applyMutation
+    this.updateMutation = opts.updateMutation
     this.commitMutation = opts.commitMutation
     this.cancelMutation = opts.cancelMutation
 
@@ -104,6 +109,31 @@ export class ActionQueue extends EventEmitter {
 
       await this.setItem('actionQueue', queue)
     })
+  }
+
+  protected processParameters (parameters: any[]): any[] {
+    const copyParameters: any[] = JSON.parse(JSON.stringify(parameters))
+    const parseParameter = (parameter: any): any => {
+      if (typeof parameter === 'string' && isTemporaryIdentifier(parameter)) {
+        const tmpId = this.temporaryIdentifiers.find(tmp => tmp.temporaryId === parameter)
+        if (tmpId?.id) return tmpId.id
+        return parameter
+      }
+
+      if (typeof parameter === 'object' && !Array.isArray(parameter)) {
+        Object.keys(parameter).forEach((key) => {
+          parameter[key] = parseParameter(parameter[key])
+        })
+      } else if (Array.isArray(parameter)) {
+        parameter.forEach((param, index) => {
+          parameter[index] = parseParameter(param)
+        })
+      }
+
+      return parameter
+    }
+
+    return copyParameters.map(parameter => parseParameter(parameter))
   }
 
   protected async process (actionQueueItem: ActionQueueItem): Promise<any> {
