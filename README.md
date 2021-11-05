@@ -30,6 +30,8 @@ In a Javascript project, it can be done by using the [`@babel/plugin-proposal-de
 
 ```
 
+## Storage
+
 ## Connection Indicators
 
 The eremite store needs to know if there is an active connection to the backend of the application. That's why, when initializing a new Eremite store, you need to pass a connection indicator. The connection indicator is a class that implements the `ConnectionIndicator` interface and indicates if there is an active connection or not, and emits event in case it changes.
@@ -49,6 +51,24 @@ It is advised that you implement your own connection indicator, which also check
 ## Resources
 
 ### Mutations and Queue
+
+```typescript
+@Queueable()
+@Mutate(({ state, createTemporaryIdentifier }, user) => {
+  user.id = createTemporaryIdentifier('user')
+
+  state.users.unshift(user)
+})
+async createUser (user: User): Promise<User> {
+  const { mutation } = useContext(this)
+
+  const result = await User.createUser(user)
+
+  mutation.updateTemporaryId('user', user.id)
+}
+```
+
+### Consolidation
 
 ## Plugins
 
