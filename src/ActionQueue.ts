@@ -4,11 +4,6 @@ import EventEmitter from 'eventemitter3'
 import { isTemporaryIdentifier, Mutation, MutationState } from '.'
 import { TemporaryIdentifier } from './Resource'
 
-// export interface TemporaryIdentifier {
-//   temporaryId: string
-//   id?: any
-// }
-
 export interface ActionQueueItem {
   actionId?: string
   resource: string
