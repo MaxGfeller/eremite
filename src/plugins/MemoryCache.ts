@@ -1,6 +1,6 @@
 import { EremitePlugin } from '../Eremite'
 
-export function InMemory (opts: { cacheSize?: number} = {}): EremitePlugin {
+export function MemoryCache (opts: { cacheSize?: number} = {}): EremitePlugin {
   const cacheSize = opts.cacheSize ?? 2000
 
   const cache: { [key: string]: { value: any, timestamp: number } } = {}
