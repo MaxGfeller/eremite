@@ -47,6 +47,13 @@ export class Mutation {
     return this.temporaryIdentifiers
   }
 
+  updateTemporaryIdentifier (label: string, id: any): void {
+    const temporaryIdentifier = this.temporaryIdentifiers.find(identifier => identifier.label === label)
+    if (temporaryIdentifier) {
+      temporaryIdentifier.id = id
+    }
+  }
+
   cancel (): void {
     this.state = MutationState.cancelled
   }
