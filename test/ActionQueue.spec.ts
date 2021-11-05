@@ -1,10 +1,14 @@
-import { ActionQueue } from '../src'
+import { ActionQueue, Mutation } from '../src'
 import { ActionQueueItem } from '../src/ActionQueue'
 import { nextTick } from './utils'
 
 let actionQueue: ActionQueue
 
 const executeAction: jest.Mock = jest.fn(async (actionQueueItem: ActionQueueItem): Promise<any> => {
+  return {
+    mutation: new Mutation(() => {}, []),
+    result: undefined
+  }
 })
 
 const getItem: jest.Mock = jest.fn()
