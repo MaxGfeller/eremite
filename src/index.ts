@@ -25,4 +25,7 @@ export {
   Eremite,
   EremitePlugin
 } from './Eremite'
-export { TemporaryIdentifier, createTemporaryIdentifier } from './TemporaryIdentifier'
+export {
+  createTemporaryIdentifier,
+  isTemporaryIdentifier
+} from './TemporaryIdentifier'
