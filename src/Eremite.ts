@@ -65,6 +65,7 @@ export class Eremite extends EventEmitter {
       getItem: this.getItem,
       setItem: this.setItem,
       applyMutation: () => {},
+      updateMutation: () => {},
       commitMutation: () => {},
       cancelMutation: () => {}
     })

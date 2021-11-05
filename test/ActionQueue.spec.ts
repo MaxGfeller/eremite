@@ -14,6 +14,7 @@ const executeAction: jest.Mock = jest.fn(async (actionQueueItem: ActionQueueItem
 const getItem: jest.Mock = jest.fn()
 const setItem: jest.Mock = jest.fn()
 const applyMutation: jest.Mock = jest.fn()
+const updateMutation: jest.Mock = jest.fn()
 const commitMutation: jest.Mock = jest.fn()
 const cancelMutation: jest.Mock = jest.fn()
 
@@ -23,6 +24,7 @@ test('Init', () => {
     getItem,
     setItem,
     applyMutation,
+    updateMutation,
     commitMutation,
     cancelMutation
   })
