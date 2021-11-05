@@ -17,9 +17,12 @@ export {
   BrowserConnectionIndicator
 } from './BrowserConnectionIndicator'
 export {
+  ActionQueueItem,
   ActionQueue
 } from './ActionQueue'
 export {
-  Identifier
+  Identifier,
+  Eremite,
+  EremitePlugin
 } from './Eremite'
 export { TemporaryIdentifier, createTemporaryIdentifier } from './TemporaryIdentifier'
