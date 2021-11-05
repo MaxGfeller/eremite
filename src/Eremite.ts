@@ -2,6 +2,7 @@ import localforage from 'localforage'
 import { EventEmitter } from 'eventemitter3'
 import { ConnectionIndicator } from './ConnectionIndicator'
 import { ActionQueue, ActionQueueItem } from './ActionQueue'
+import { Mutation } from '.'
 
 export type Identifier = string | number | { [key: string]: any }
 
@@ -56,7 +57,10 @@ export class Eremite extends EventEmitter {
 
     this.#actionQueue = new ActionQueue({
       executeAction: async (action: ActionQueueItem) => {
-        return null
+        return {
+          result: null,
+          mutation: new Mutation(() => {}, [])
+        }
       },
       getItem: this.getItem,
       setItem: this.setItem,
