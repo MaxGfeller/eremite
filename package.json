@@ -2,9 +2,10 @@
   "name": "@cyon/eremite",
   "version": "0.0.3",
   "description": "",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
