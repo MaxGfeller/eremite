@@ -1,10 +1,7 @@
 import PQueue from 'p-queue'
 import { v4 as uuid } from 'uuid'
-// // import { Identifier, Namespace } from '.'
-// import * as hash from 'object-hash'
 import EventEmitter from 'eventemitter3'
 import { Mutation, MutationState } from '.'
-// import { Resource } from './Resource'
 
 export interface TemporaryIdentifier {
   temporaryId: string
