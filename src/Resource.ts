@@ -13,10 +13,17 @@ export enum MutationState {
   committed
 }
 
+export interface TemporaryIdentifier {
+  label: string
+  temporaryId: string
+  id: any
+}
+
 export class Mutation {
-  state: MutationState
+  protected state: MutationState
   protected fn: Function
   protected parameters: any[]
+  protected temporaryIdentifiers: TemporaryIdentifier[] = []
 
   constructor (fn: Function, parameters: any[]) {
     this.fn = fn
@@ -30,6 +37,14 @@ export class Mutation {
 
   getParameters (): any[] {
     return this.parameters
+  }
+
+  addTemporaryIdentifier (label: string, temporaryId: string): void {
+    this.temporaryIdentifiers.push({ label, temporaryId, id: null })
+  }
+
+  getTemporaryIdentifiers (): TemporaryIdentifier[] {
+    return this.temporaryIdentifiers
   }
 
   cancel (): void {
@@ -186,7 +201,6 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     // @ts-expect-error
     const descriptor = Object.getOwnPropertyDescriptor(this[action], mutationKey)
 
-    // todo: create mutation instance here
     const mutation = new Mutation(descriptor?.value.fn, args)
     const o = descriptor ? { [mutationContextKey]: mutation } : {}
     Object.setPrototypeOf(o, this)
