@@ -1,6 +1,7 @@
 import EventEmitter from 'eventemitter3'
 import { reactive, readonly, Ref, ref, toRaw, unref } from '@vue/reactivity'
 import { watch } from '@vue/runtime-core'
+import hash from 'object-hash'
 
 // todo: symbols for all the property descriptors
 export const mutationKey = Symbol('mutateFn')
@@ -75,6 +76,7 @@ interface ResourceEvents<T> {
   'state:update': [T]
   'mutatedState:update': [T]
   'internal:externalMutations:create': [Array<{ id: string, module: string, ts: number, fn: Function }>]
+  'internal:externalMutations:update': [Array<{ id: string, module: string, ts: number, fn: Function }>]
   'internal:externalMutations:cancel': [[string]]
 }
 
@@ -83,7 +85,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   protected mutatedState: Ref<T|null>
   protected pendingMutations: { [id: string]: { ts: number, action: string, parameters: any[] }} = {}
   protected externalMutations: { [id: string]: { ts: number, handler: (state: T) => void } } = {}
-  protected mutationsEmittingExternalMutations: string[] = []
+  protected mutationsEmittingExternalMutations: { [id: string]: string } = {}
   protected _queueAction: null | ((action: string, parameters: any[]) => Promise<any>) = null
 
   constructor () {
@@ -112,7 +114,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   }
 
   private computeMutatedState (): void {
-    this.mutationsEmittingExternalMutations = []
+    this.mutationsEmittingExternalMutations = {}
 
     const newState: T = { ...JSON.parse(JSON.stringify(toRaw(this.state))) }
     const externalStateMutations: Array<{ id: string, ts: number, module: string, fn: Function}> = []
@@ -123,12 +125,12 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
         const action: Function = (this as any)[mutation.action]
         const propertyDescriptor = Object.getOwnPropertyDescriptor(action, mutationKey)
         if (!propertyDescriptor) throw new Error(`Action ${mutation.action} does not have a mutation function`)
-        const { fn } = propertyDescriptor.value as { fn: Function, parameters: any[] }
+        const { fn } = propertyDescriptor.value as { fn: Function }
         let emittedExternalMutation = false
         fn({
           state: newState,
           mutateResourceState: (module: string, fn: Function) => {
-            // todo: check if id is already in externalStateMutations, if so: don't add it to list again and don't emit
+            if (this.mutationsEmittingExternalMutations[id] === hash(mutation.parameters)) return
 
             externalStateMutations.push({ id, ts: mutation.ts, module, fn })
             emittedExternalMutation = true
@@ -136,7 +138,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
         }, ...mutation.parameters)
 
         if (emittedExternalMutation) {
-          this.mutationsEmittingExternalMutations.push(id)
+          this.mutationsEmittingExternalMutations[id] = hash(mutation.parameters)
         }
       } else {
         const mutation = this.externalMutations[id]
@@ -172,13 +174,23 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   }
 
   cancelPendingMutation (id: string): void {
-    if (this.mutationsEmittingExternalMutations.includes(id)) {
+    if (Object.keys(this.mutationsEmittingExternalMutations).includes(id)) {
       this.emit('internal:externalMutations:cancel', [id])
     }
 
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete this.pendingMutations[id]
     this.computeMutatedState()
+  }
+
+  updatePendingMutation (id: string, ...parameters: any[]): void {
+    this.pendingMutations[id].parameters = parameters
+    this.computeMutatedState()
+  }
+
+  commitPendingMutation (id: string, ...parameters: any[]): void {
+    const mutation = this.pendingMutations[id]
+    if (!mutation) throw new Error(`No pending mutation with id ${id}`)
   }
 
   addExternalMutations (mutations: Array<{ id: string, ts: number, fn: (state: T) => void }>): void {
@@ -204,7 +216,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     this.computeMutatedState()
   }
 
-  async _triggerAction (action: string, args: any[]): Promise<any> {
+  async _triggerAction (action: string, args: any[]): Promise<{ result: any, mutation: Mutation }> {
     // @ts-expect-error
     const descriptor = Object.getOwnPropertyDescriptor(this[action], mutationKey)
 
