@@ -75,16 +75,18 @@ export function useContext (o: Object): { mutation: Mutation | null } {
 interface ResourceEvents<T> {
   'state:update': [T]
   'mutatedState:update': [T]
-  'internal:externalMutations:create': [Array<{ id: string, module: string, ts: number, fn: Function }>]
-  'internal:externalMutations:update': [Array<{ id: string, module: string, ts: number, fn: Function }>]
-  'internal:externalMutations:cancel': [[string]]
+  'internal:externalMutations:create': [Array<{ id: string, module: string, ts: number, fn: (state: any) => void }>]
+  'internal:externalMutations:update': [Array<{ id: string, module: string, ts: number, fn: (state: any) => void }>]
+  'internal:externalMutations:commit': [Array<{ id: string, module: string, ts: number, fn: (state: any) => void }>]
+  'internal:externalMutations:cancel': [Array<{ id: string }>]
 }
 
 export abstract class Resource<T extends Object> extends EventEmitter<ResourceEvents<T>> {
   protected state: T
   protected mutatedState: Ref<T|null>
   protected pendingMutations: { [id: string]: { ts: number, action: string, parameters: any[] }} = {}
-  protected externalMutations: { [id: string]: { ts: number, handler: (state: T) => void } } = {}
+  protected externalMutations: Array<{ id: string, ts: number, handler: (state: T) => void }> = []
+  // protected externalMutations: { [id: string]: { ts: number, handler: (state: T) => void } } = {}
   protected mutationsEmittingExternalMutations: { [id: string]: string } = {}
   protected _queueAction: null | ((action: string, parameters: any[]) => Promise<any>) = null
 
@@ -117,7 +119,8 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     this.mutationsEmittingExternalMutations = {}
 
     const newState: T = { ...JSON.parse(JSON.stringify(toRaw(this.state))) }
-    const externalStateMutations: Array<{ id: string, ts: number, module: string, fn: Function}> = []
+    const externalStateMutations: Array<{ id: string, ts: number, module: string, fn: (state: any) => void}> = []
+    const externalStateMutationUpdates: Array<{ id: string, ts: number, module: string, fn: (state: any) => void}> = []
 
     const applyMutation = (type: 'internal'|'external', id: string): void => {
       if (type === 'internal') {
@@ -129,10 +132,14 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
         let emittedExternalMutation = false
         fn({
           state: newState,
-          mutateResourceState: (module: string, fn: Function) => {
+          mutateResourceState: (module: string, fn: (state: any) => void) => {
             if (this.mutationsEmittingExternalMutations[id] === hash(mutation.parameters)) return
 
-            externalStateMutations.push({ id, ts: mutation.ts, module, fn })
+            if (this.mutationsEmittingExternalMutations[id]) {
+              externalStateMutationUpdates.push({ id, ts: mutation.ts, module, fn })
+            } else {
+              externalStateMutations.push({ id, ts: mutation.ts, module, fn })
+            }
             emittedExternalMutation = true
           }
         }, ...mutation.parameters)
@@ -141,21 +148,25 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
           this.mutationsEmittingExternalMutations[id] = hash(mutation.parameters)
         }
       } else {
-        const mutation = this.externalMutations[id]
+        const mutation = this.externalMutations[parseInt(id)]
         mutation.handler(newState)
       }
     }
 
     const mutations = Object.keys(this.pendingMutations)
       .map(id => ({ type: 'internal', id, ts: this.pendingMutations[id].ts }))
-      .concat(Object.keys(this.externalMutations)
-        .map(id => ({ type: 'external', id, ts: this.externalMutations[id].ts })))
+      .concat(this.externalMutations
+        .map(({ ts }, index) => ({ type: 'external', id: `${index}`, ts })))
       .sort((a, b) => a.ts - b.ts)
 
-    mutations.forEach(({ type, id }) => applyMutation(type as 'internal'|'external', id))
+    mutations.forEach(({ type, id }) => applyMutation(type as 'internal' | 'external', id))
 
     if (externalStateMutations.length) {
       this.emit('internal:externalMutations:create', externalStateMutations)
+    }
+
+    if (externalStateMutationUpdates.length) {
+      this.emit('internal:externalMutations:update', externalStateMutationUpdates)
     }
     this.mutatedState.value = newState
   }
@@ -174,8 +185,10 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   }
 
   cancelPendingMutation (id: string): void {
-    if (Object.keys(this.mutationsEmittingExternalMutations).includes(id)) {
-      this.emit('internal:externalMutations:cancel', [id])
+    const mutation = this.pendingMutations[id]
+
+    if (mutation && Object.keys(this.mutationsEmittingExternalMutations).includes(id)) {
+      this.emit('internal:externalMutations:cancel', [{ id }])
     }
 
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
@@ -189,13 +202,56 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   }
 
   commitPendingMutation (id: string, ...parameters: any[]): void {
+    const newState: T = { ...JSON.parse(JSON.stringify(toRaw(this.state))) }
+    const externalStateMutations: Array<{ id: string, ts: number, module: string, fn: (state: any) => void}> = []
+
     const mutation = this.pendingMutations[id]
     if (!mutation) throw new Error(`No pending mutation with id ${id}`)
+
+    const action: Function = (this as any)[mutation.action]
+    const propertyDescriptor = Object.getOwnPropertyDescriptor(action, mutationKey)
+    if (!propertyDescriptor) throw new Error(`Action ${mutation.action} does not have a mutation function`)
+    const { fn } = propertyDescriptor.value as { fn: Function }
+
+    fn({
+      state: newState,
+      mutateResourceState: (module: string, fn: (state: any) => void) => {
+        externalStateMutations.push({ id, ts: mutation.ts, module, fn })
+      }
+    }, ...parameters)
+
+    this.emit('internal:externalMutations:commit', externalStateMutations)
+
+    this.state = newState
   }
 
   addExternalMutations (mutations: Array<{ id: string, ts: number, fn: (state: T) => void }>): void {
     mutations.forEach(({ id, ts, fn }) => {
-      this.externalMutations[id] = { ts, handler: fn }
+      this.externalMutations.push({ id, ts, handler: fn })
+    })
+
+    this.computeMutatedState()
+  }
+
+  updateExternalMutations (mutations: Array<{ id: string, ts: number, fn: (state: T) => void }>): void {
+    mutations.forEach((mutation) => {
+      this.externalMutations = this.externalMutations.filter(({ id }) => mutation.id !== id)
+    })
+
+    mutations.forEach(({ id, ts, fn }) => {
+      this.externalMutations.push({ id, ts, handler: fn })
+    })
+
+    this.computeMutatedState()
+  }
+
+  commitExternalMutations (mutations: Array<{ id: string, ts: number, fn: (state: T) => void }>): void {
+    mutations.forEach((mutation) => {
+      this.externalMutations = this.externalMutations.filter(({ id }) => mutation.id !== id)
+    })
+
+    mutations.forEach(({ fn }) => {
+      fn(this.state)
     })
 
     this.computeMutatedState()
@@ -205,11 +261,13 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     let deletedMutations = false
 
     ids.forEach((id) => {
-      if (!this.externalMutations[id]) return
+      const mutationsWithId = this.externalMutations.filter(({ id: mutationId }) => mutationId === id)
+      if (!mutationsWithId.length) return
 
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete this.externalMutations[id]
       deletedMutations = true
+      mutationsWithId.forEach((mutation) => {
+        this.externalMutations.splice(this.externalMutations.indexOf(mutation), 1)
+      })
     })
 
     if (!deletedMutations) return

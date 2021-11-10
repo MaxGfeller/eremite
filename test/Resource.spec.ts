@@ -171,9 +171,9 @@ test('External mutations stemming from internal mutations are emitted', (done) =
 })
 
 test('Cancelling a mutation emits an event to also cancel its external mutations', (done) => {
-  res.on('internal:externalMutations:cancel', (ids) => {
-    expect(ids.length).toBe(1)
-    expect(ids[0]).toBe('09')
+  res.on('internal:externalMutations:cancel', (mutations) => {
+    expect(mutations.length).toBe(1)
+    expect(mutations[0].id).toBe('09')
     done()
   })
 

@@ -2,7 +2,7 @@ import localforage from 'localforage'
 import { EventEmitter } from 'eventemitter3'
 import { ConnectionIndicator } from './ConnectionIndicator'
 import { ActionQueue, ActionQueueItem } from './ActionQueue'
-import { Mutation } from '.'
+import { Resource } from '.'
 
 export type Identifier = string | number | { [key: string]: any }
 
@@ -18,9 +18,10 @@ export interface EremitePlugin {
 }
 
 export class Eremite extends EventEmitter {
-  #store: LocalForage
-  #plugins: EremitePlugin[]
-  #actionQueue: ActionQueue
+  protected store: LocalForage
+  protected plugins: EremitePlugin[]
+  protected actionQueue: ActionQueue
+  protected resources: { [name: string]: Resource<any> }
 
   constructor (opts: {
     name?: string
@@ -29,10 +30,48 @@ export class Eremite extends EventEmitter {
     forageDriver?: string
     plugins?: EremitePlugin[]
     offline?: boolean
+    resources?: { [name: string]: Resource<any> }
   }) {
     super()
 
-    this.#plugins = opts.plugins ?? []
+    this.plugins = opts.plugins ?? []
+    this.resources = opts.resources ?? {}
+
+    Object.values(this.resources).forEach((resource) => {
+      const getMutationsByModule = (mutations: Array<{ module: string, id: string, ts?: number, fn?: (state: any) => void }>): { [module: string]: Array<{ id: string, ts?: number, fn?: (state: any) => void }> } => {
+        const mutationsByModule: { [module: string]: Array<{ id: string, ts: number, fn: (state: any) => void }> } = {}
+
+        mutations.forEach(({ id, module, ts, fn }) => {
+          if (!mutationsByModule[module]) mutationsByModule[module] = []
+          mutationsByModule[module].push({ id, ts: ts as number, fn: fn as (state: any) => void })
+        })
+
+        return mutationsByModule
+      }
+      resource.on('internal:externalMutations:create', (mutations) => {
+        const mutationsByModule = getMutationsByModule(mutations)
+
+        Object.keys(mutationsByModule).forEach((module) => {
+          this.getResource(module).addExternalMutations(mutationsByModule[module] as Array<{ id: string, ts: number, fn: (state: any) => void }>)
+        })
+      })
+
+      resource.on('internal:externalMutations:update', (mutations) => {
+        const mutationsByModule = getMutationsByModule(mutations)
+
+        Object.keys(mutationsByModule).forEach((module) => {
+          this.getResource(module).updateExternalMutations(mutationsByModule[module] as Array<{ id: string, ts: number, fn: (state: any) => void }>)
+        })
+      })
+
+      resource.on('internal:externalMutations:cancel', (mutations) => {
+        mutations.forEach((module) => {
+          Object.values(this.resources.forEach).forEach((resource) => {
+            resource.cancelExternalMutations(mutations)
+          })
+        })
+      })
+    })
 
     const storeName = opts.name ?? 'eremite'
     const forageOpts: LocalForageOptions = {
@@ -40,43 +79,57 @@ export class Eremite extends EventEmitter {
       storeName: `${storeName}--values`
     }
 
-    this.#store = localforage.createInstance(forageOpts)
+    this.store = localforage.createInstance(forageOpts)
     if (opts.forageDriverDefinition) {
-      this.#store.defineDriver(opts.forageDriverDefinition)
+      this.store.defineDriver(opts.forageDriverDefinition)
         .catch((err) => {
           throw new Error(err)
         })
     }
 
     if (opts.forageDriver) {
-      this.#store.setDriver(opts.forageDriver)
+      this.store.setDriver(opts.forageDriver)
         .catch((err) => {
           throw new Error(err)
         })
     }
 
-    this.#actionQueue = new ActionQueue({
+    this.actionQueue = new ActionQueue({
       executeAction: async (action: ActionQueueItem) => {
-        return {
-          result: null,
-          mutation: new Mutation(() => {}, [])
-        }
+        const result = await this.getResource(action.resource)._triggerAction(action.action, action.parameters)
+
+        return result
       },
       getItem: this.getItem,
       setItem: this.setItem,
-      applyMutation: () => {},
-      updateMutation: () => {},
-      commitMutation: () => {},
-      cancelMutation: () => {}
+      applyMutation: (actionId: string, resource: string, action: string, parameters: any[]): void => {
+        this.getResource(resource).addPendingMutation(actionId, Date.now(), action, ...parameters)
+      },
+      updateMutation: (actionId: string, resource: string, parameters: any[]): void => {
+        this.getResource(resource).updatePendingMutation(actionId, ...parameters)
+      },
+      commitMutation: (actionId: string, resource: string, action: string, parameters: any[]): void => {
+        this.getResource(resource).commitPendingMutation(actionId, ...parameters)
+      },
+      cancelMutation: (actionId: string, resource: string): void => {
+        this.getResource(resource).cancelPendingMutation(actionId)
+      }
     })
 
     if (!opts.offline ?? true) {
-      this.#actionQueue.start()
+      this.actionQueue.start()
     }
   }
 
+  protected getResource (name: string): Resource<any> {
+    const resource = this.resources[name]
+    if (!resource) throw new Error(`Resource\`${name}\` not found`)
+
+    return resource
+  }
+
   protected preparePlugins (action: string, step: string): Function[] {
-    return this.#plugins.map((plugin) => {
+    return this.plugins.map((plugin) => {
       // @ts-expect-error
       if (!plugin[action]?.[step]) {
         return null
@@ -117,7 +170,7 @@ export class Eremite extends EventEmitter {
       return
     }
 
-    await this.#store.setItem(processedValues.key, processedValues.value)
+    await this.store.setItem(processedValues.key, processedValues.value)
 
     const postPlugins = this.preparePlugins('setItem', 'after')
     await processPlugins(processedValues.key, processedValues.value, postPlugins)
@@ -156,7 +209,7 @@ export class Eremite extends EventEmitter {
       return processedValues.value
     }
 
-    const result = await this.#store.getItem(processedValues.key)
+    const result = await this.store.getItem(processedValues.key)
 
     const postPlugins = this.preparePlugins('getItem', 'after')
     const processedValuesPost = await processPlugins(processedValues.key, result, false, postPlugins)
