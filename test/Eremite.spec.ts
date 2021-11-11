@@ -30,8 +30,6 @@ test('Init', () => {
 test('get and set items', async () => {
   const result = await getItem.call(eremite, 'foo')
   expect(result).toBeNull()
-  // expect(result).toBe(undefined)
-  // expect(beforeGetItem).toHaveBeenCalled()
   await setItem.call(eremite, 'foo', 'bar')
   const secondResult = await getItem.call(eremite, 'foo')
   expect(secondResult).toBe('bar')
@@ -77,7 +75,6 @@ test('Initializing with plugins', () => {
   })
 
   eremiteWithPlugins = new Eremite({
-
     name: 'WithPlugins',
     connectionIndicator: new BrowserConnectionIndicator(),
     plugins: [testPlugin()]
@@ -98,8 +95,8 @@ test('Initializing with plugins', () => {
 test('A setItem.before plugin that does not call next does not save the value', async () => {
   beforeSetItem.mockImplementationOnce(async (key: string, value: any, next: (key: string, value: any) => void) => {})
 
-  await setItem.call(eremiteWithPlugins, 'foo', 'bar')
-  const result = await getItem.call(eremiteWithPlugins, 'foo')
+  await pluginsSetItem.call(eremiteWithPlugins, 'foo', 'bar')
+  const result = await pluginsGetItem.call(eremiteWithPlugins, 'foo')
   expect(result).toBeNull()
 })
 
@@ -112,8 +109,8 @@ test('A setItem.before that does call next functions as expected', async () => {
     next(key)
   })
 
-  await setItem.call(eremiteWithPlugins, 'foo', 'bar')
-  const result = await getItem.call(eremiteWithPlugins, 'foo')
+  await pluginsSetItem.call(eremiteWithPlugins, 'foo', 'bar')
+  const result = await pluginsGetItem.call(eremiteWithPlugins, 'foo')
   expect(result).toBe('bar')
 })
 
@@ -126,8 +123,8 @@ test('setItem.before can manipulate the value', async () => {
     next(key)
   })
 
-  await setItem.call(eremiteWithPlugins, 'foo', 'bar')
-  const result = await getItem.call(eremiteWithPlugins, 'foo')
+  await pluginsSetItem.call(eremiteWithPlugins, 'foo', 'bar')
+  const result = await pluginsGetItem.call(eremiteWithPlugins, 'foo')
   expect(result).toBe('bar-test')
 })
 
@@ -140,8 +137,8 @@ test('...and also the key', async () => {
     next(key)
   })
 
-  await setItem.call(eremiteWithPlugins, 'foo', 'bar')
-  const result = await getItem.call(eremiteWithPlugins, 'foo1')
+  await pluginsSetItem.call(eremiteWithPlugins, 'foo', 'bar')
+  const result = await pluginsGetItem.call(eremiteWithPlugins, 'foo1')
   expect(result).toBe('bar')
 })
 
@@ -154,8 +151,8 @@ test('A getItem.before can return early', async () => {
     return 'hello'
   })
 
-  await setItem.call(eremiteWithPlugins, 'foo', 'bar')
-  const result = await getItem.call(eremiteWithPlugins, 'foo')
+  await pluginsSetItem.call(eremiteWithPlugins, 'foo', 'bar')
+  const result = await pluginsGetItem.call(eremiteWithPlugins, 'foo')
   expect(result).toBe('hello')
 })
 
@@ -168,8 +165,8 @@ test('getItem.before can manipulate the key', async () => {
     next(key + '1', value)
   })
 
-  await setItem.call(eremiteWithPlugins, 'foo1', 'bar')
-  const result = await getItem.call(eremiteWithPlugins, 'foo')
+  await pluginsSetItem.call(eremiteWithPlugins, 'foo1', 'bar')
+  const result = await pluginsGetItem.call(eremiteWithPlugins, 'foo')
   expect(result).toBe('bar')
 })
 
@@ -179,7 +176,7 @@ test('getItem.after is executed but cannot change how the value is saved', async
     next(key + '1', value)
   })
 
-  await setItem.call(eremiteWithPlugins, 'foo', 'bar')
-  const result = await getItem.call(eremiteWithPlugins, 'foo')
+  await pluginsSetItem.call(eremiteWithPlugins, 'foo', 'bar')
+  const result = await pluginsGetItem.call(eremiteWithPlugins, 'foo')
   expect(result).toBe('bar')
 })
