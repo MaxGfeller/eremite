@@ -14,7 +14,7 @@ export class BrowserConnectionIndicator extends EventEmitter<ConnectionIndicator
     })
   }
 
-  async isConnected (): Promise<boolean> {
+  isConnected (): boolean {
     return window.navigator.onLine
   }
 }

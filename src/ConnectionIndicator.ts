@@ -5,7 +5,7 @@ export interface ConnectionIndicatorEvents {
 }
 
 export interface ConnectionIndicator extends EventEmitter<ConnectionIndicatorEvents> {
-  isConnected: () => Promise<boolean>
+  isConnected: () => boolean
   disconnect?: () => void
   reconnect?: () => Promise<void>
 }
