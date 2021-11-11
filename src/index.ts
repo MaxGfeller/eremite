@@ -11,7 +11,8 @@ export {
   Queueable
 } from './decorators/Queueable'
 export {
-  ConnectionIndicator
+  ConnectionIndicator,
+  ConnectionIndicatorEvents
 } from './ConnectionIndicator'
 export {
   BrowserConnectionIndicator
