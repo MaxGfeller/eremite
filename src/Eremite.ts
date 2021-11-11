@@ -18,10 +18,12 @@ export interface EremitePlugin {
 }
 
 export class Eremite extends EventEmitter {
+  protected name: string
   protected store: LocalForage
   protected plugins: EremitePlugin[]
   protected actionQueue: ActionQueue
   protected resources: { [name: string]: Resource<any> }
+  protected connectionIndicator: ConnectionIndicator
 
   constructor (opts: {
     name?: string
@@ -34,8 +36,11 @@ export class Eremite extends EventEmitter {
   }) {
     super()
 
+    this.name = opts.name ?? 'default'
+
     this.plugins = opts.plugins ?? []
     this.resources = opts.resources ?? {}
+    this.connectionIndicator = opts.connectionIndicator
 
     Object.values(this.resources).forEach((resource) => {
       const getMutationsByModule = (mutations: Array<{ module: string, id: string, ts?: number, fn?: (state: any) => void }>): { [module: string]: Array<{ id: string, ts?: number, fn?: (state: any) => void }> } => {
@@ -100,8 +105,12 @@ export class Eremite extends EventEmitter {
 
         return result
       },
-      getItem: this.getItem,
-      setItem: this.setItem,
+      getItem: async (name: string): Promise<any> => {
+        return await this.getItem(name)
+      },
+      setItem: async (name: string, value: any): Promise<void> => {
+        return await this.setItem(name, value)
+      },
       applyMutation: (actionId: string, resource: string, action: string, parameters: any[]): void => {
         this.getResource(resource).addPendingMutation(actionId, Date.now(), action, ...parameters)
       },
