@@ -86,7 +86,6 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   protected mutatedState: Ref<T|null>
   protected pendingMutations: { [id: string]: { ts: number, action: string, parameters: any[] }} = {}
   protected externalMutations: Array<{ id: string, ts: number, handler: (state: T) => void }> = []
-  // protected externalMutations: { [id: string]: { ts: number, handler: (state: T) => void } } = {}
   protected mutationsEmittingExternalMutations: { [id: string]: string } = {}
   protected _queueAction: null | ((action: string, parameters: any[]) => Promise<any>) = null
 
@@ -220,9 +219,13 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
       }
     }, ...parameters)
 
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    delete this.pendingMutations[id]
+
     this.emit('internal:externalMutations:commit', externalStateMutations)
 
     this.state = newState
+    this.computeMutatedState()
   }
 
   addExternalMutations (mutations: Array<{ id: string, ts: number, fn: (state: T) => void }>): void {
