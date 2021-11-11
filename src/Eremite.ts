@@ -125,12 +125,35 @@ export class Eremite extends EventEmitter {
       }
     })
 
+    Object.keys(this.resources).forEach((resourceName) => {
+      const resource = this.resources[resourceName]
+      resource._setQueueAction(async (action: string, parameters: any[]): Promise<any> => {
+        return await this.actionQueue.queueAction({
+          resource: resourceName,
+          action: action,
+          parameters
+        })
+      })
+    })
+
     if (!opts.offline ?? true) {
-      this.actionQueue.start()
+      if (this.connectionIndicator.isConnected()) {
+        this.actionQueue.start()
+      }
     }
+
+    this.connectionIndicator.on('connection', (connected) => {
+      if (opts.offline) return
+
+      if (connected) {
+        this.actionQueue.start()
+      } else {
+        this.actionQueue.pause()
+      }
+    })
   }
 
-  protected getResource (name: string): Resource<any> {
+  public getResource (name: string): Resource<any> {
     const resource = this.resources[name]
     if (!resource) throw new Error(`Resource\`${name}\` not found`)
 
