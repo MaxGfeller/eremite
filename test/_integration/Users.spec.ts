@@ -1,7 +1,7 @@
 import EventEmitter from 'eventemitter3'
 import * as memoryDriver from 'localforage-driver-memory'
 import { Eremite, Resource, Queueable, Mutate, ConnectionIndicator, ConnectionIndicatorEvents, useContext } from '../../src'
-import { nextTick, sleep } from '../utils'
+import { nextTick } from '../utils'
 
 let eremite: Eremite
 
@@ -129,13 +129,12 @@ test('Set the connection indicator to online', async () => {
 })
 
 test('The user should now be created', async () => {
-  await sleep(100)
+  await nextTick()
   const state = usersResource.getState()
   expect(state.users).toHaveLength(2)
   expect(state.users[1]).toMatchObject({
     name: 'Johannes',
-    email: 'jj@eremite.org'
+    email: 'jj@eremite.org',
+    id: 2
   })
-
-  console.log(state)
 })
