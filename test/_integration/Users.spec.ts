@@ -1,31 +1,8 @@
-import EventEmitter from 'eventemitter3'
 import * as memoryDriver from 'localforage-driver-memory'
-import { Eremite, Resource, Queueable, Mutate, ConnectionIndicator, ConnectionIndicatorEvents, useContext } from '../../src'
-import { nextTick } from '../utils'
+import { Eremite, Resource, Queueable, Mutate, useContext } from '../../src'
+import { nextTick, TestConnectionIndicator } from '../utils'
 
 let eremite: Eremite
-
-class TestConnectionIndicator extends EventEmitter<ConnectionIndicatorEvents> implements ConnectionIndicator {
-  protected onlineStatus: boolean = false
-
-  setOnlineStatus (status: boolean): void {
-    this.onlineStatus = status
-    this.emit('connection', status)
-  }
-
-  isConnected (): boolean {
-    return this.onlineStatus
-  }
-
-  disconnect (): void {
-    this.setOnlineStatus(false)
-  }
-
-  async reconnect (): Promise<void> {
-    await nextTick()
-    this.setOnlineStatus(true)
-  }
-}
 
 interface User {
   id?: number
