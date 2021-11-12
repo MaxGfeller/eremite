@@ -91,6 +91,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   protected mutationsEmittingExternalMutations: { [id: string]: string } = {}
   protected _queueAction: null | ((action: string, parameters: any[]) => Promise<any>) = null
   protected persist: null | ((state: T) => Promise<void>) = null
+  protected loadState: null | (() => Promise<T>) = null
 
   constructor () {
     super()
@@ -121,6 +122,11 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
 
   _setQueueAction (fn: (action: string, parameters: any[]) => Promise<any>): void {
     this._queueAction = fn
+  }
+
+  _setLoadState (fn: () => Promise<T>): void {
+    this.loadState = fn
+    void this.loadState()
   }
 
   _setPersist (fn: (state: T) => Promise<void>): void {
