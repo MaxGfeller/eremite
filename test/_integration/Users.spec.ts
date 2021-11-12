@@ -58,8 +58,6 @@ class UserResource extends Resource<UserState> {
 
   @Queueable()
   @Mutate<UserState>(({ state }, user: User) => {
-    console.log('mutate', user)
-
     const newUser = { ...user }
     if (!user.id) newUser.unpublished = true
     state.users.push(newUser)
