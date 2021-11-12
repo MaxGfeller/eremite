@@ -216,7 +216,6 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   }
 
   commitPendingMutation (id: string, ...parameters: any[]): void {
-    const newState: T = { ...JSON.parse(JSON.stringify(toRaw(this.state))) }
     const externalStateMutations: Array<{ id: string, ts: number, module: string, fn: (state: any) => void}> = []
 
     const mutation = this.pendingMutations[id]
@@ -228,7 +227,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     const { fn } = propertyDescriptor.value as { fn: Function }
 
     fn({
-      state: newState,
+      state: this.state,
       mutateResourceState: (module: string, fn: (state: any) => void) => {
         externalStateMutations.push({ id, ts: mutation.ts, module, fn })
       }
@@ -239,7 +238,6 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
 
     this.emit('internal:externalMutations:commit', externalStateMutations)
 
-    this.state = newState
     this.computeMutatedState()
   }
 
