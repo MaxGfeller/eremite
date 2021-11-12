@@ -36,10 +36,6 @@ export abstract class ListResource<T> extends Resource<ListResourceState<T>> {
 
   @Queueable()
   async getItem (id: string): Promise<T> {
-    if (this.state.items[id]) {
-      return this.state.items[id]
-    }
-
     const result = await this.fetchOne(id)
     if (!result) {
       throw new Error(`Item \`${id}\` not found`)
