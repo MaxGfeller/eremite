@@ -2,6 +2,7 @@ import EventEmitter from 'eventemitter3'
 import { reactive, readonly, Ref, ref, toRaw, unref } from '@vue/reactivity'
 import { watch } from '@vue/runtime-core'
 import hash from 'object-hash'
+import { debounce } from 'debounce'
 
 // todo: symbols for all the property descriptors
 export const mutationKey = Symbol('mutateFn')
@@ -105,10 +106,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
 
       this.emit('state:update', this.getState(false))
       if (this.persist) {
-        this.persist(this.getState(false))
-          .catch((err) => {
-            throw new Error(`Failed to persist \`${this.name}\` state: \`${err.message as string}\``)
-          })
+        void this.persist(this.getState(false))
       }
     })
 
@@ -126,7 +124,13 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   }
 
   _setPersist (fn: (state: T) => Promise<void>): void {
-    this.persist = fn
+    this.persist = debounce(async (state: T) => {
+      console.log('persist', state)
+      await fn(state)
+        .catch((err) => {
+          throw new Error(`Failed to persist \`${this.name}\` state: \`${err.message as string}\``)
+        })
+    }, 100)
   }
 
   private computeMutatedState (): void {
