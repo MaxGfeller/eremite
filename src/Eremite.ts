@@ -127,6 +127,7 @@ export class Eremite extends EventEmitter {
 
     Object.keys(this.resources).forEach((resourceName) => {
       const resource = this.resources[resourceName]
+      resource._setName(resourceName)
       resource._setQueueAction(async (action: string, parameters: any[]): Promise<any> => {
         return await this.actionQueue.queueAction({
           resource: resourceName,

@@ -82,6 +82,7 @@ interface ResourceEvents<T> {
 }
 
 export abstract class Resource<T extends Object> extends EventEmitter<ResourceEvents<T>> {
+  protected name: string = ''
   protected state: T
   protected mutatedState: Ref<T|null>
   protected pendingMutations: { [id: string]: { ts: number, action: string, parameters: any[] }} = {}
@@ -108,6 +109,10 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     watch(this.mutatedState, () => {
       this.emit('mutatedState:update', this.getState(true))
     })
+  }
+
+  _setName (name: string): void {
+    this.name = name
   }
 
   _setQueueAction (fn: (action: string, parameters: any[]) => Promise<any>): void {
