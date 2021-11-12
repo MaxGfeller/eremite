@@ -57,16 +57,40 @@ class UserResource extends Resource<UserState> {
   }
 
   @Queueable()
-  @Mutate<UserState>(({ state }, user: User) => {
+  @Mutate<UserState>(({ state, mutateResourceState }, user: User) => {
     const newUser = { ...user }
     if (!user.id) newUser.unpublished = true
     state.users.push(newUser)
+
+    mutateResourceState('dashboard', (state: DashboardState) => {
+      state.users++
+    })
   })
   async createUser (user: User): Promise<void> {
     await nextTick()
     const { mutation } = useContext(this)
 
     mutation?.setParameters({ ...user, id: 2 })
+  }
+}
+
+interface DashboardState {
+  issues: number
+  users: number
+}
+
+class DashboardResource extends Resource<DashboardState> {
+  initialState (): DashboardState {
+    return {
+      issues: 0,
+      users: 0
+    }
+  }
+
+  async fetchDashboard (): Promise<void> {
+    await nextTick()
+    this.state.issues = 0
+    this.state.users = 0
   }
 }
 
@@ -79,6 +103,7 @@ test('Initialize', () => {
     forageDriverDefinition: memoryDriver,
     forageDriver: memoryDriver._driver,
     resources: {
+      dashboard: new DashboardResource(),
       users: new UserResource()
     }
   })
@@ -124,6 +149,12 @@ test('User should now be listed as unpublished', async () => {
   })
 })
 
+test('Dashboard should also be updated with the new user', async () => {
+  const dashboardResource = eremite.getResource('dashboard') as DashboardResource
+  const state = dashboardResource.getState()
+  expect(state.users).toBe(1)
+})
+
 test('Set the connection indicator to online', async () => {
   await testConnectionIndicator.reconnect()
 })
@@ -137,4 +168,10 @@ test('The user should now be created', async () => {
     email: 'jj@eremite.org',
     id: 2
   })
+})
+
+test('Dashboard should still be updated with the new user', async () => {
+  const dashboardResource = eremite.getResource('dashboard') as DashboardResource
+  const state = dashboardResource.getState()
+  expect(state.users).toBe(1)
 })
