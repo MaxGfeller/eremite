@@ -26,6 +26,8 @@ export abstract class ListResource<T> extends Resource<ListResourceState<T>> {
     }
   }
 
+  abstract getId (item: T): string|null
+
   protected async fetchList (from: number, to: number, namespace: string = 'default'): Promise<{ total?: number, items: T[] }> {
     throw new Error('`fetchList` implementation is missing')
   }
@@ -75,6 +77,19 @@ export abstract class ListResource<T> extends Resource<ListResourceState<T>> {
   getListLocal (from: number, to: number, namespace: string = 'default'): T[] {
     if (!this.state.namespaces[namespace].items) return []
 
-    return this.state.namespaces[namespace].items.slice(from, to)
+    return this.state.namespaces[namespace].items
+      .slice(from, to)
+      .map((item) => {
+        if (!this.getId(item)) return item
+
+        const detailedItem = this.state.items[this.getId(item) as string]
+        if (!detailedItem) return item
+
+        return { ...item, ...detailedItem }
+      })
+  }
+
+  getListTotal (namespace: string = 'default'): number {
+    return this.state.namespaces[namespace]?.total ?? 0
   }
 }
