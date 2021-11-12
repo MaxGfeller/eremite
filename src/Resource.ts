@@ -226,7 +226,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
 
     const action: Function = (this as any)[mutation.action]
     const propertyDescriptor = Object.getOwnPropertyDescriptor(action, mutationKey)
-    if (!propertyDescriptor) throw new Error(`Action ${mutation.action} does not have a mutation function`)
+    if (!propertyDescriptor) return
     const { fn } = propertyDescriptor.value as { fn: Function }
 
     fn({
