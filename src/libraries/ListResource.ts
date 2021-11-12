@@ -13,6 +13,16 @@ export interface ListResourceState<T> {
   }
 }
 
+export function addToFrontMutation (opts: { state: ListResourceState<any> }, item: any, namespace: string = 'default'): void {
+  opts.state.namespaces[namespace].items.unshift(item)
+  opts.state.namespaces[namespace].total++
+}
+
+export function addToBackMutation (opts: { state: ListResourceState<any> }, item: any, namespace: string = 'default'): void {
+  opts.state.namespaces[namespace].items.push(item)
+  opts.state.namespaces[namespace].total++
+}
+
 export abstract class ListResource<T> extends Resource<ListResourceState<T>> {
   initialState (): ListResourceState<T> {
     return {
