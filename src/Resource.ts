@@ -125,7 +125,6 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
 
   _setPersist (fn: (state: T) => Promise<void>): void {
     this.persist = debounce(async (state: T) => {
-      console.log('persist', state)
       await fn(state)
         .catch((err) => {
           throw new Error(`Failed to persist \`${this.name}\` state: \`${err.message as string}\``)
