@@ -89,6 +89,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   protected externalMutations: Array<{ id: string, ts: number, handler: (state: T) => void }> = []
   protected mutationsEmittingExternalMutations: { [id: string]: string } = {}
   protected _queueAction: null | ((action: string, parameters: any[]) => Promise<any>) = null
+  protected persist: null | ((state: T) => Promise<void>) = null
 
   constructor () {
     super()
@@ -102,8 +103,13 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     watch(this.state, () => {
       this.computeMutatedState()
 
-      // todo: persist
       this.emit('state:update', this.getState(false))
+      if (this.persist) {
+        this.persist(this.getState(false))
+          .catch((err) => {
+            throw new Error(`Failed to persist \`${this.name}\` state: \`${err.message as string}\``)
+          })
+      }
     })
 
     watch(this.mutatedState, () => {
@@ -117,6 +123,10 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
 
   _setQueueAction (fn: (action: string, parameters: any[]) => Promise<any>): void {
     this._queueAction = fn
+  }
+
+  _setPersist (fn: (state: T) => Promise<void>): void {
+    this.persist = fn
   }
 
   private computeMutatedState (): void {
