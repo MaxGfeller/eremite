@@ -128,6 +128,8 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     this.loadState = fn
     void this.loadState()
       .then((state) => {
+        if (state === null) return
+
         this.state = state
         this.computeMutatedState()
       })
