@@ -331,8 +331,8 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     return await this._queueAction(action, args)
   }
 
-  getReactiveState (mutated: boolean = true): T {
-    if (mutated) return this.mutatedState.value as T
+  getReactiveState (mutated: boolean = true): T|Ref<T> {
+    if (mutated) return this.mutatedState as Ref<T>
     return readonly(this.state) as T
   }
 
