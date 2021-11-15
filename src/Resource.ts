@@ -127,6 +127,9 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   _setLoadState (fn: () => Promise<T>): void {
     this.loadState = fn
     void this.loadState()
+      .then(() => {
+        this.computeMutatedState()
+      })
   }
 
   _setPersist (fn: (state: T) => Promise<void>): void {
