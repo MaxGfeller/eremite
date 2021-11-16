@@ -1,5 +1,6 @@
 import { Queueable } from '..'
 import { Resource } from '../Resource'
+import hash from 'object-hash'
 
 export interface ListResourceState<T> {
   items: {
@@ -37,6 +38,10 @@ export abstract class ListResource<T> extends Resource<ListResourceState<T>> {
   }
 
   abstract getId (item: T): string|null
+
+  protected hashObject (obj: any): string {
+    return hash(obj)
+  }
 
   protected async fetchList (from: number, to: number, namespace: string = 'default'): Promise<{ total?: number, items: T[] }> {
     throw new Error('`fetchList` implementation is missing')
