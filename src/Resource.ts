@@ -1,5 +1,5 @@
 import EventEmitter from 'eventemitter3'
-import { reactive, readonly, Ref, ref, toRaw, unref } from '@vue/reactivity'
+import { reactive, Ref, ref, toRaw, unref } from '@vue/reactivity'
 import { watch } from '@vue/runtime-core'
 import hash from 'object-hash'
 import { debounce } from 'debounce'
