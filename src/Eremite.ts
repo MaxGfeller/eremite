@@ -168,6 +168,10 @@ export class Eremite extends EventEmitter {
     return resource
   }
 
+  public getConnectionIndicator (): ConnectionIndicator {
+    return this.connectionIndicator
+  }
+
   protected preparePlugins (action: string, step: string): Function[] {
     return this.plugins.map((plugin) => {
       // @ts-expect-error
