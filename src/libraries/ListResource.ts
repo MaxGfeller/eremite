@@ -75,7 +75,7 @@ export abstract class ListResource<T> extends Resource<ListResourceState<T>> {
   async getList (from: number, to: number, namespace: string = 'default'): Promise<T[]> {
     const result = await this.fetchList(from, to, namespace)
 
-    if (result.total && result.total !== this.state.namespaces[namespace].total) {
+    if (result.total && result.total !== this.state.namespaces[namespace]?.total) {
       this.state.namespaces[namespace] = {
         total: result.total,
         items: new Array(result.total).fill(null)
