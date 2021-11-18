@@ -69,6 +69,14 @@ export class Eremite extends EventEmitter {
         })
       })
 
+      resource.on('internal:externalMutations:commit', (mutations) => {
+        const mutationsByModule = getMutationsByModule(mutations)
+
+        Object.keys(mutationsByModule).forEach((module) => {
+          this.getResource(module).commitExternalMutations(mutationsByModule[module] as Array<{ id: string, ts: number, fn: (state: any) => void }>)
+        })
+      })
+
       resource.on('internal:externalMutations:cancel', (mutations) => {
         mutations.forEach((module) => {
           Object.values(this.resources.forEach).forEach((resource) => {
