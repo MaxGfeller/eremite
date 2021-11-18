@@ -25,6 +25,14 @@ export function addToBackMutation (opts: { state: ListResourceState<any> }, item
 }
 
 export abstract class ListResource<T> extends Resource<ListResourceState<T>> {
+  protected maxPageSize: number|null = null
+
+  constructor (opts: { maxPageSize?: number } = {}) {
+    super()
+
+    this.maxPageSize = opts.maxPageSize ?? null
+  }
+
   initialState (): ListResourceState<T> {
     return {
       items: {},
@@ -73,7 +81,26 @@ export abstract class ListResource<T> extends Resource<ListResourceState<T>> {
 
   @Queueable()
   async getList (from: number, to: number, namespace: string = 'default'): Promise<T[]> {
-    const result = await this.fetchList(from, to, namespace)
+    let result: { total?: number, items: T[]}
+
+    if (this.maxPageSize && (to - from) > this.maxPageSize) {
+      const promises = []
+      for (let i = 0; i < Math.ceil((to - from) / this.maxPageSize); i++) {
+        promises.push(this.fetchList(from + (i * this.maxPageSize), from + (i * this.maxPageSize) + this.maxPageSize - 1, namespace))
+      }
+
+      const results = await Promise.all(promises)
+      const resultList: T[] = []
+      result = {
+        total: results[0].total ?? undefined,
+        items: results.reduce((acc, cur) => {
+          acc.push(...cur.items)
+          return acc
+        }, resultList)
+      }
+    } else {
+      result = await this.fetchList(from, to, namespace)
+    }
 
     if (result.total && result.total !== this.state.namespaces[namespace]?.total) {
       this.state.namespaces[namespace] = {
