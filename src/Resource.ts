@@ -1,6 +1,6 @@
 import EventEmitter from 'eventemitter3'
 import { reactive, Ref, ref, toRaw, unref } from '@vue/reactivity'
-import { watch } from '@vue/runtime-core'
+import { watch } from '@vue-reactivity/watch'
 import hash from 'object-hash'
 import { debounce } from 'debounce'
 
@@ -109,7 +109,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
       if (this.persist) {
         void this.persist(this.getState(false))
       }
-    })
+    }, { deep: true })
 
     watch(this.mutatedState, () => {
       this.emit('mutatedState:update', this.getState(true))
