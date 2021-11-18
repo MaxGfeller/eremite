@@ -127,10 +127,13 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   _setLoadState (fn: () => Promise<T>): void {
     this.loadState = fn
     void this.loadState()
-      .then((state) => {
+      .then((state: T) => {
         if (state === null) return
 
-        this.state = state
+        Object.keys(state).forEach((key) => {
+          // @ts-expect-error
+          this.state[key] = state[key]
+        })
         this.computeMutatedState()
       })
   }
