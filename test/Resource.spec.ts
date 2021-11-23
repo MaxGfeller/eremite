@@ -198,7 +198,7 @@ test('Calling the action queues it', () => {
   res.addBaz('test')
     .catch(err => expect(err).toBeFalsy())
 
-  expect(queueFn).toHaveBeenCalledWith('addBaz', ['test'])
+  expect(queueFn).toHaveBeenCalledWith('addBaz', ['test'], {})
 })
 
 test('Triggering an action executes it', () => {
