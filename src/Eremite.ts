@@ -143,11 +143,14 @@ export class Eremite extends EventEmitter {
         const state = (await this.getItem(`${resourceName}_state`)) ?? null
         return state
       })
-      resource._setQueueAction(async (action: string, parameters: any[]): Promise<any> => {
+      resource._setQueueAction(async (action: string, parameters: any[], opts: {
+        maxTries?: number
+      } = {}): Promise<any> => {
         return await this.actionQueue.queueAction({
           resource: resourceName,
           action: action,
-          parameters
+          parameters,
+          ...opts
         })
       })
     })
