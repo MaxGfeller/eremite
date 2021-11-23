@@ -169,6 +169,7 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
       } catch (err) {
         if (!actionQueueItem.timesTried) actionQueueItem.timesTried = 0
         actionQueueItem.timesTried++
+        actionQueueItem.lastError = (err as Error).message
 
         if (actionQueueItem.timesTried >= (actionQueueItem.maxTries ?? this.maxTries)) {
           this.cancelMutation(actionQueueItem.actionId as string, actionQueueItem.resource)
