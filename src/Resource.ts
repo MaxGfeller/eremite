@@ -90,7 +90,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   protected pendingMutations: { [id: string]: { ts: number, action: string, parameters: any[] }} = {}
   protected externalMutations: Array<{ id: string, ts: number, handler: (state: T) => void }> = []
   protected mutationsEmittingExternalMutations: { [id: string]: string } = {}
-  protected _queueAction: null | ((action: string, parameters: any[], opts: { maxTries?: number, wait?: number }) => Promise<any>) = null
+  protected _queueAction: null | ((action: string, parameters: any[], opts: { maxTries?: number, retryWaitTime?: number }) => Promise<any>) = null
   protected persist: null | ((state: T) => Promise<void>) = null
   protected loadState: null | (() => Promise<T>) = null
 
@@ -335,11 +335,11 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     // @ts-expect-error
     const descriptor = Object.getOwnPropertyDescriptor(this[action], maxTriesKey)
 
-    const opts: { maxTries?: number, wait?: number } = {}
+    const opts: { maxTries?: number, retryWaitTime?: number } = {}
 
     if (descriptor?.value) {
       opts.maxTries = descriptor.value.tries
-      opts.wait = descriptor.value.wait
+      opts.retryWaitTime = descriptor.value.retryWaitTime
     }
 
     return await this._queueAction(action, args, opts)

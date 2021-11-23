@@ -12,12 +12,17 @@ export interface ActionQueueItem {
   dependingOn?: string
   timesTried?: number
   maxTries?: number
+  retryWaitTime?: number
   lastError?: string
   temporaryIdentifiers?: TemporaryIdentifier[]
   timestamp?: number
 }
 
-export class ActionQueue extends EventEmitter {
+interface ActionQueueEvents {
+  'error': [Error, ActionQueueItem]
+}
+
+export class ActionQueue extends EventEmitter<ActionQueueEvents> {
   protected storeQueue: PQueue
   protected actionQueue: PQueue
   protected executeAction: (item: ActionQueueItem) => Promise<{ result: any, mutation: Mutation }>
@@ -162,13 +167,39 @@ export class ActionQueue extends EventEmitter {
         const temporaryIdentifiers = actionResult.mutation.getTemporaryIdentifiers()
         this.temporaryIdentifiers.push(...temporaryIdentifiers)
       } catch (err) {
-        // todo: re-implement fail
-        // this.fail(item.actionId, err)
+        if (!actionQueueItem.timesTried) actionQueueItem.timesTried = 0
+        actionQueueItem.timesTried++
 
-        // todo: mark as failed in store
+        if (actionQueueItem.timesTried >= (actionQueueItem.maxTries ?? this.maxTries)) {
+          this.cancelMutation(actionQueueItem.actionId as string, actionQueueItem.resource)
+          this.emit('error', err as Error, actionQueueItem)
 
-        console.error(err)
-        throw err
+          await this.storeQueue.add(async () => {
+            const queue: ActionQueueItem[] = (await this.getItem('actionQueue')) || []
+            const index = queue.findIndex(item => item.actionId === actionQueueItem.actionId)
+            if (index !== -1) {
+              queue.splice(index, 1)
+              await this.setItem('actionQueue', queue)
+            }
+          })
+
+          throw err
+        } else {
+          await this.storeQueue.add(async () => {
+            const queue: ActionQueueItem[] = (await this.getItem('actionQueue')) || []
+            const index = queue.findIndex(item => item.actionId === actionQueueItem.actionId)
+            if (index !== -1) {
+              queue[index] = actionQueueItem
+              await this.setItem('actionQueue', queue)
+            }
+          })
+
+          setTimeout(() => {
+            void this.process(actionQueueItem)
+          }, actionQueueItem.retryWaitTime ?? this.retryWaitTime)
+
+          throw err
+        }
       }
 
       await this.storeQueue.add(async () => {
