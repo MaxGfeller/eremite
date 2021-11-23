@@ -7,6 +7,7 @@ import { debounce } from 'debounce'
 // todo: symbols for all the property descriptors
 export const mutationKey = Symbol('mutateFn')
 const mutationContextKey = Symbol('mutation')
+export const maxTriesKey = Symbol('maxTries')
 
 export enum MutationState {
   ready,
@@ -89,7 +90,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   protected pendingMutations: { [id: string]: { ts: number, action: string, parameters: any[] }} = {}
   protected externalMutations: Array<{ id: string, ts: number, handler: (state: T) => void }> = []
   protected mutationsEmittingExternalMutations: { [id: string]: string } = {}
-  protected _queueAction: null | ((action: string, parameters: any[]) => Promise<any>) = null
+  protected _queueAction: null | ((action: string, parameters: any[], opts: { maxTries?: number }) => Promise<any>) = null
   protected persist: null | ((state: T) => Promise<void>) = null
   protected loadState: null | (() => Promise<T>) = null
 
@@ -331,7 +332,16 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     // todo: set action dependencies, pass pending actions
     // todo: consolidate actions
 
-    return await this._queueAction(action, args)
+    // @ts-expect-error
+    const descriptor = Object.getOwnPropertyDescriptor(this[action], maxTriesKey)
+
+    const opts: { maxTries?: number } = {}
+
+    if (descriptor?.value) {
+      opts.maxTries = descriptor.value
+    }
+
+    return await this._queueAction(action, args, opts)
   }
 
   getReactiveState (): Ref<T> {
