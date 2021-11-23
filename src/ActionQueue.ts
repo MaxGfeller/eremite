@@ -28,6 +28,7 @@ export class ActionQueue extends EventEmitter {
   protected commitMutation: (actionId: string, resource: string, action: string, parameters: any[]) => void
   protected cancelMutation: (actionId: string, resource: string) => void
   protected maxTries: number
+  protected retryWaitTime: number
 
   protected temporaryIdentifiers: TemporaryIdentifier[] = []
   protected actionIdPromiseMapping: { [key: string]: Promise<any> } = {}
@@ -42,6 +43,7 @@ export class ActionQueue extends EventEmitter {
     cancelMutation: (actionId: string, resource: string) => void
     concurrency?: number
     maxTries?: number
+    retryWaitTime?: number
   }) {
     super()
 
@@ -53,6 +55,7 @@ export class ActionQueue extends EventEmitter {
     this.commitMutation = opts.commitMutation
     this.cancelMutation = opts.cancelMutation
     this.maxTries = opts.maxTries ?? 3
+    this.retryWaitTime = opts.retryWaitTime ?? 1000
 
     this.storeQueue = new PQueue({ concurrency: 1, autoStart: true })
     this.actionQueue = new PQueue({ concurrency: opts.concurrency ?? 10, autoStart: false })
