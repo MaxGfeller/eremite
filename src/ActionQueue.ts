@@ -64,6 +64,8 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
 
     this.storeQueue = new PQueue({ concurrency: 1, autoStart: true })
     this.actionQueue = new PQueue({ concurrency: opts.concurrency ?? 10, autoStart: false })
+
+    void this.pickup()
   }
 
   public start (): void {
@@ -222,5 +224,16 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
     })()
 
     return await this.actionIdPromiseMapping[actionQueueItem.actionId]
+  }
+
+  async pickup (): Promise<void> {
+    const queue: ActionQueueItem[] = (await this.getItem('actionQueue')) || []
+    queue.forEach((queueItem) => {
+      this.applyMutation(queueItem.actionId as string, queueItem.resource, queueItem.action, queueItem.parameters)
+
+      void this.actionQueue.add(async () => {
+        return await this.process(queueItem)
+      })
+    })
   }
 }
