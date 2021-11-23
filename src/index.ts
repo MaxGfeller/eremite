@@ -11,6 +11,9 @@ export {
   Queueable
 } from './decorators/Queueable'
 export {
+  MaxTries
+} from './decorators/MaxTries'
+export {
   ConnectionIndicator,
   ConnectionIndicatorEvents
 } from './ConnectionIndicator'
