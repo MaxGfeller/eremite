@@ -1,6 +1,7 @@
 import { Queueable } from '..'
 import { Resource } from '../Resource'
 import hash from 'object-hash'
+import { MaxTries } from '../decorators/MaxTries'
 
 export interface ListResourceState<T> {
   items: {
@@ -59,6 +60,7 @@ export abstract class ListResource<T> extends Resource<ListResourceState<T>> {
     throw new Error('`fetchOne` implementation is missing')
   }
 
+  @MaxTries({ tries: 1 })
   @Queueable()
   async getItem (id: string): Promise<T> {
     const result = await this.fetchOne(id)
@@ -79,6 +81,7 @@ export abstract class ListResource<T> extends Resource<ListResourceState<T>> {
     return null
   }
 
+  @MaxTries({ tries: 1 })
   @Queueable()
   async getList (from: number, to: number, namespace: string = 'default'): Promise<T[]> {
     let result: { total?: number, items: T[]}
