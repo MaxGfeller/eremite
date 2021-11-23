@@ -26,9 +26,10 @@ export class ActionQueue extends EventEmitter {
   protected updateMutation: (actionId: string, resource: string, parameters: any[]) => void
   protected commitMutation: (actionId: string, resource: string, action: string, parameters: any[]) => void
   protected cancelMutation: (actionId: string, resource: string) => void
+  protected maxTries: number
 
   protected temporaryIdentifiers: TemporaryIdentifier[] = []
-  #actionIdPromiseMapping: { [key: string]: Promise<any> } = {}
+  protected actionIdPromiseMapping: { [key: string]: Promise<any> } = {}
 
   constructor (opts: {
     executeAction: (item: ActionQueueItem) => Promise<{ result: any, mutation: Mutation }>
@@ -39,6 +40,7 @@ export class ActionQueue extends EventEmitter {
     commitMutation: (actionId: string, resource: string, action: string, parameters: any[]) => void
     cancelMutation: (actionId: string, resource: string) => void
     concurrency?: number
+    maxTries?: number
   }) {
     super()
 
@@ -49,6 +51,7 @@ export class ActionQueue extends EventEmitter {
     this.updateMutation = opts.updateMutation
     this.commitMutation = opts.commitMutation
     this.cancelMutation = opts.cancelMutation
+    this.maxTries = opts.maxTries ?? 3
 
     this.storeQueue = new PQueue({ concurrency: 1, autoStart: true })
     this.actionQueue = new PQueue({ concurrency: opts.concurrency ?? 10, autoStart: false })
@@ -137,10 +140,10 @@ export class ActionQueue extends EventEmitter {
     }
 
     if (actionQueueItem.dependingOn) {
-      await this.#actionIdPromiseMapping[actionQueueItem.dependingOn]
+      await this.actionIdPromiseMapping[actionQueueItem.dependingOn]
     }
 
-    this.#actionIdPromiseMapping[actionQueueItem.actionId] = (async () => {
+    this.actionIdPromiseMapping[actionQueueItem.actionId] = (async () => {
       let actionResult
       try {
         actionResult = await this.executeAction({ ...actionQueueItem, parameters: this.processParameters(actionQueueItem.parameters) })
@@ -177,6 +180,6 @@ export class ActionQueue extends EventEmitter {
       return actionResult.result
     })()
 
-    return await this.#actionIdPromiseMapping[actionQueueItem.actionId]
+    return await this.actionIdPromiseMapping[actionQueueItem.actionId]
   }
 }
