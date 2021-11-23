@@ -11,6 +11,7 @@ export interface ActionQueueItem {
   parameters: any[]
   dependingOn?: string
   timesTried?: number
+  maxTries?: number
   lastError?: string
   temporaryIdentifiers?: TemporaryIdentifier[]
   timestamp?: number
@@ -68,6 +69,8 @@ export class ActionQueue extends EventEmitter {
   public async queueAction (queueItem: ActionQueueItem): Promise<any> {
     queueItem.actionId = uuid()
     queueItem.timestamp = Date.now()
+    queueItem.maxTries = queueItem.maxTries ?? this.maxTries
+    queueItem.timesTried = 0
 
     await this.storeQueue.add(async () => {
       const queue: ActionQueueItem[] = (await this.getItem('actionQueue')) || []
@@ -158,6 +161,9 @@ export class ActionQueue extends EventEmitter {
       } catch (err) {
         // todo: re-implement fail
         // this.fail(item.actionId, err)
+
+        // todo: mark as failed in store
+
         console.error(err)
         throw err
       }
