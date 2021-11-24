@@ -191,6 +191,10 @@ export class Eremite extends EventEmitter {
     })
   }
 
+  public getActionQueue (): ActionQueue {
+    return this.actionQueue
+  }
+
   public getResource (name: string): Resource<any> {
     const resource = this.resources[name]
     if (!resource) throw new Error(`Resource\`${name}\` not found`)
