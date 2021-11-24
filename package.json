@@ -1,6 +1,6 @@
 {
   "name": "@cyon/eremite",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "description": "",
   "main": "dist/src/index.js",
   "scripts": {
