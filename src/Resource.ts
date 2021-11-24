@@ -75,6 +75,7 @@ export function useContext (o: Object): { mutation: Mutation | null } {
 }
 
 interface ResourceEvents<T> {
+  'state:loaded': [T]
   'state:update': [T]
   'mutatedState:update': [T]
   'internal:externalMutations:create': [Array<{ id: string, module: string, ts: number, fn: (state: any) => void }>]
@@ -135,7 +136,9 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
           // @ts-expect-error
           this.state[key] = state[key]
         })
+
         this.computeMutatedState()
+        this.emit('state:loaded', this.getState())
       })
   }
 

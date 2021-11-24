@@ -133,28 +133,46 @@ export class Eremite extends EventEmitter {
       }
     })
 
-    Object.keys(this.resources).forEach((resourceName) => {
-      const resource = this.resources[resourceName]
-      resource._setName(resourceName)
-      resource._setPersist(async (state: any): Promise<void> => {
-        await this.setItem(`${resourceName}_state`, state)
-      })
-      resource._setLoadState(async (): Promise<any> => {
-        const state = (await this.getItem(`${resourceName}_state`)) ?? null
-        return state
-      })
-      resource._setQueueAction(async (action: string, parameters: any[], opts: {
-        maxTries?: number
-        retryWaitTime?: number
-      } = {}): Promise<any> => {
-        return await this.actionQueue.queueAction({
-          resource: resourceName,
-          action: action,
-          parameters,
-          ...opts
+    new Promise<void>((resolve) => {
+      let loaded = 0
+
+      Object.keys(this.resources).forEach((resourceName) => {
+        const resource = this.resources[resourceName]
+        resource.once('state:loaded', () => {
+          loaded++
+
+          if (loaded === Object.keys(this.resources).length) {
+            resolve()
+          }
+        })
+
+        resource._setName(resourceName)
+        resource._setPersist(async (state: any): Promise<void> => {
+          await this.setItem(`${resourceName}_state`, state)
+        })
+        resource._setLoadState(async (): Promise<any> => {
+          const state = (await this.getItem(`${resourceName}_state`)) ?? null
+          return state
+        })
+        resource._setQueueAction(async (action: string, parameters: any[], opts: {
+          maxTries?: number
+          retryWaitTime?: number
+        } = {}): Promise<any> => {
+          return await this.actionQueue.queueAction({
+            resource: resourceName,
+            action: action,
+            parameters,
+            ...opts
+          })
         })
       })
     })
+      .then(() => {
+        void this.actionQueue.pickup()
+      })
+      .catch((err) => {
+        throw err
+      })
 
     if (!opts.offline ?? true) {
       if (this.connectionIndicator.isConnected()) {

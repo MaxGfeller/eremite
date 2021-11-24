@@ -64,8 +64,6 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
 
     this.storeQueue = new PQueue({ concurrency: 1, autoStart: true })
     this.actionQueue = new PQueue({ concurrency: opts.concurrency ?? 10, autoStart: false })
-
-    void this.pickup()
   }
 
   public start (): void {
