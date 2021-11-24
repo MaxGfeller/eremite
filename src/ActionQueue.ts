@@ -128,6 +128,8 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
   protected processParameters (parameters: any[]): any[] {
     const copyParameters: any[] = JSON.parse(JSON.stringify(parameters))
     const parseParameter = (parameter: any): any => {
+      if (!parameter) return parameter
+
       if (typeof parameter === 'string' && isTemporaryIdentifier(parameter)) {
         const tmpId = this.temporaryIdentifiers.find(tmp => tmp.temporaryId === parameter)
         if (tmpId?.id) return tmpId.id
