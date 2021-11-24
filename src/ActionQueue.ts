@@ -74,6 +74,11 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
     this.actionQueue.pause()
   }
 
+  public async getQueue (): Promise<ActionQueueItem[]> {
+    const queue: ActionQueueItem[] = (await this.getItem('actionQueue')) || []
+    return queue
+  }
+
   public async queueAction (queueItem: ActionQueueItem): Promise<any> {
     queueItem.actionId = uuid()
     queueItem.timestamp = Date.now()
