@@ -98,6 +98,20 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
     })
   }
 
+  public async updateQueuedAction (actionId: string, temporaryIdentifiers?: TemporaryIdentifier[]): Promise<void> {
+    if (!temporaryIdentifiers) return
+
+    await this.storeQueue.add(async () => {
+      const queue: ActionQueueItem[] = (await this.getItem('actionQueue')) || []
+      const index = queue.findIndex(item => item.actionId === actionId)
+      if (index !== -1) {
+        queue[index].temporaryIdentifiers?.push(...temporaryIdentifiers)
+      }
+
+      await this.setItem('actionQueue', queue)
+    })
+  }
+
   public async cancelAction (actionId: string): Promise<void> {
     await this.storeQueue.add(async () => {
       const queue: ActionQueueItem[] = (await this.getItem('actionQueue')) || []
