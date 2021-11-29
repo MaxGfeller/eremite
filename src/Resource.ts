@@ -3,6 +3,7 @@ import { reactive, Ref, ref, toRaw, unref } from '@vue/reactivity'
 import { watch } from '@vue/runtime-core'
 import hash from 'object-hash'
 import { debounce } from 'debounce'
+import { createTemporaryIdentifier } from '.'
 
 // todo: symbols for all the property descriptors
 export const mutationKey = Symbol('mutateFn')
@@ -19,7 +20,7 @@ export enum MutationState {
 export interface TemporaryIdentifier {
   label: string
   temporaryId: string
-  id: any
+  id?: any
 }
 
 export class Mutation {
@@ -92,6 +93,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   protected externalMutations: Array<{ id: string, ts: number, handler: (state: T) => void }> = []
   protected mutationsEmittingExternalMutations: { [id: string]: string } = {}
   protected _queueAction: null | ((action: string, parameters: any[], opts: { maxTries?: number, retryWaitTime?: number }) => Promise<any>) = null
+  protected updateQueuedAction: null | ((id: string, temporaryIdentifiers?: TemporaryIdentifier[]) => void) = null
   protected persist: null | ((state: T) => Promise<void>) = null
   protected loadState: null | (() => Promise<T>) = null
 
@@ -124,6 +126,10 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
 
   _setQueueAction (fn: (action: string, parameters: any[]) => Promise<any>): void {
     this._queueAction = fn
+  }
+
+  _setUpdateQueuedAction (fn: (id: string, temporaryIdentifiers?: TemporaryIdentifier[]) => Promise<void>): void {
+    this.updateQueuedAction = fn
   }
 
   _setLoadState (fn: () => Promise<T>): void {
@@ -166,6 +172,8 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
         if (!propertyDescriptor) return
         const { fn } = propertyDescriptor.value as { fn: Function }
         let emittedExternalMutation = false
+        const temporaryIdentifiers: TemporaryIdentifier[] = []
+
         fn({
           state: newState,
           mutateResourceState: (module: string, fn: (state: any) => void) => {
@@ -177,11 +185,20 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
               externalStateMutations.push({ id, ts: mutation.ts, module, fn })
             }
             emittedExternalMutation = true
+          },
+          createTemporaryIdentifier: (label: string): string => {
+            const temporaryId = createTemporaryIdentifier()
+            temporaryIdentifiers.push({ label, temporaryId })
+            return temporaryId
           }
         }, ...mutation.parameters)
 
         if (emittedExternalMutation) {
           this.mutationsEmittingExternalMutations[id] = hash(mutation.parameters)
+        }
+
+        if (temporaryIdentifiers.length > 0 && this.updateQueuedAction) {
+          this.updateQueuedAction(id, temporaryIdentifiers)
         }
       } else {
         const mutation = this.externalMutations[parseInt(id)]
@@ -312,11 +329,16 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     this.computeMutatedState()
   }
 
-  async _triggerAction (action: string, args: any[]): Promise<{ result: any, mutation: Mutation }> {
+  async _triggerAction (action: string, args: any[], opts: { temporaryIdentifiers?: TemporaryIdentifier[] } = {}): Promise<{ result: any, mutation: Mutation }> {
     // @ts-expect-error
     const descriptor = Object.getOwnPropertyDescriptor(this[action], mutationKey)
 
     const mutation = new Mutation(descriptor?.value.fn, args)
+    if (opts.temporaryIdentifiers?.length) {
+      opts.temporaryIdentifiers.forEach((identifier) => {
+        mutation.addTemporaryIdentifier(identifier.label, identifier.temporaryId)
+      })
+    }
     const o = descriptor ? { [mutationContextKey]: mutation } : {}
     Object.setPrototypeOf(o, this)
 
@@ -336,13 +358,13 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     // todo: consolidate actions
 
     // @ts-expect-error
-    const descriptor = Object.getOwnPropertyDescriptor(this[action], maxTriesKey)
+    const maxTriesDescriptor = Object.getOwnPropertyDescriptor(this[action], maxTriesKey)
 
     const opts: { maxTries?: number, retryWaitTime?: number } = {}
 
-    if (descriptor?.value) {
-      opts.maxTries = descriptor.value.tries
-      opts.retryWaitTime = descriptor.value.retryWaitTime
+    if (maxTriesDescriptor?.value) {
+      opts.maxTries = maxTriesDescriptor.value.tries
+      opts.retryWaitTime = maxTriesDescriptor.value.retryWaitTime
     }
 
     return await this._queueAction(action, args, opts)
