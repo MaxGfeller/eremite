@@ -3,6 +3,7 @@ import { EventEmitter } from 'eventemitter3'
 import { ConnectionIndicator } from './ConnectionIndicator'
 import { ActionQueue, ActionQueueItem } from './ActionQueue'
 import { Resource } from '.'
+import { TemporaryIdentifier } from './Resource'
 
 export type Identifier = string | number | { [key: string]: any }
 
@@ -109,7 +110,7 @@ export class Eremite extends EventEmitter {
 
     this.actionQueue = new ActionQueue({
       executeAction: async (action: ActionQueueItem) => {
-        const result = await this.getResource(action.resource)._triggerAction(action.action, action.parameters)
+        const result = await this.getResource(action.resource)._triggerAction(action.action, action.parameters, { temporaryIdentifiers: action.temporaryIdentifiers })
 
         return result
       },
@@ -164,6 +165,9 @@ export class Eremite extends EventEmitter {
             parameters,
             ...opts
           })
+        })
+        resource._setUpdateQueuedAction(async (actionId: string, temporaryIdentifiers?: TemporaryIdentifier[]): Promise<void> => {
+          await this.actionQueue.updateQueuedAction(actionId, temporaryIdentifiers)
         })
       })
     })
