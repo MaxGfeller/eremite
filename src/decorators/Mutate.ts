@@ -1,8 +1,9 @@
-import { mutationKey } from '../Resource'
+import { mutationKey, TemporaryIdentifier } from '../Resource'
 
 export function Mutate<T extends Object> (fn: (opts: {
   state: T
   mutateResourceState: (resource: string, fn: (state: any) => void) => void
+  createTemporaryIdentifier: (label: string) => TemporaryIdentifier
 }, ...parameters: any[]) => void) {
   return (target: any, key: string, descriptor: PropertyDescriptor) => {
     Object.defineProperty(target, mutationKey, {
