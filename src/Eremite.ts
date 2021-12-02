@@ -259,6 +259,10 @@ export class Eremite extends EventEmitter {
     await processPlugins(processedValues.key, processedValues.value, postPlugins)
   }
 
+  _getSetItem (): (key: string, value: any) => Promise<void> {
+    return this.setItem.bind(this)
+  }
+
   protected async getItem (key: string): Promise<any> {
     const prePlugins = this.preparePlugins('getItem', 'before')
 
@@ -298,5 +302,9 @@ export class Eremite extends EventEmitter {
     const processedValuesPost = await processPlugins(processedValues.key, result, false, postPlugins)
 
     return processedValuesPost.value
+  }
+
+  _getGetItem (): (key: string) => Promise<any> {
+    return this.getItem.bind(this)
   }
 }
