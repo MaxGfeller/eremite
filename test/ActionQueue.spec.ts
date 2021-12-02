@@ -1,6 +1,6 @@
 import { ActionQueue, Mutation } from '../src'
 import { ActionQueueItem } from '../src/ActionQueue'
-import { nextTick } from './utils'
+import { nextTick, sleep } from './utils'
 
 let actionQueue: ActionQueue
 
@@ -11,8 +11,8 @@ const executeAction: jest.Mock = jest.fn(async (actionQueueItem: ActionQueueItem
   }
 })
 
-const getItem: jest.Mock = jest.fn()
-const setItem: jest.Mock = jest.fn()
+const loadState: jest.Mock = jest.fn(async () => [])
+const persistState: jest.Mock = jest.fn(async () => {})
 const applyMutation: jest.Mock = jest.fn()
 const updateMutation: jest.Mock = jest.fn()
 const commitMutation: jest.Mock = jest.fn()
@@ -21,8 +21,8 @@ const cancelMutation: jest.Mock = jest.fn()
 test('Init', () => {
   actionQueue = new ActionQueue({
     executeAction,
-    getItem,
-    setItem,
+    loadState,
+    persistState,
     applyMutation,
     updateMutation,
     commitMutation,
@@ -39,10 +39,10 @@ test('Add action to queue persists it in store', async () => {
   })
     .catch((err) => expect(err).toBeFalsy())
 
-  await nextTick()
+  await sleep(150)
 
-  expect(setItem).toHaveBeenCalled()
-  const storeQueue = setItem.mock.calls[0][1]
+  expect(persistState).toHaveBeenCalled()
+  const storeQueue = persistState.mock.calls[0][0]
   expect(storeQueue.length).toBe(1)
   expect(storeQueue[0].resource).toBe('foo')
   expect(storeQueue[0].action).toBe('bar')
@@ -58,7 +58,7 @@ test('Action gets processed when queue is started', async () => {
   await nextTick()
 
   expect(executeAction.mock.calls[0][0].resource).toBe('foo')
-  expect(setItem).toHaveBeenCalledWith('actionQueue', [])
+  expect(persistState).toHaveBeenCalledWith([])
   expect(commitMutation).toHaveBeenCalled()
   expect(commitMutation.mock.calls[0][1]).toBe('foo')
   expect(commitMutation.mock.calls[0][2]).toBe('bar')
