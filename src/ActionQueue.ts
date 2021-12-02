@@ -86,7 +86,7 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
 
     watch(this.actionQueueItems, () => {
       if (this.persistState) {
-        void this.persistState(unref(this.actionQueueItems))
+        void this.persistState(JSON.parse(JSON.stringify(unref(this.actionQueueItems))))
       }
     }, { deep: true })
   }
