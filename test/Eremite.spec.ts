@@ -1,5 +1,5 @@
 import * as memoryDriver from 'localforage-driver-memory'
-import { ActionQueue, BrowserConnectionIndicator } from '../src'
+import { BrowserConnectionIndicator } from '../src'
 import { Eremite, EremitePlugin } from '../src/Eremite'
 
 jest.mock('../src/ActionQueue.ts')
