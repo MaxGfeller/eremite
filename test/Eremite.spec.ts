@@ -17,11 +17,8 @@ test('Init', () => {
   })
   expect(eremite).toBeDefined()
 
-  // @ts-expect-error
-  getItem = ActionQueue.mock.calls[0][0].getItem
-
-  // @ts-expect-error
-  setItem = ActionQueue.mock.calls[0][0].setItem
+  getItem = eremite._getGetItem()
+  setItem = eremite._getSetItem()
 
   expect(getItem).toBeDefined()
   expect(setItem).toBeDefined()
@@ -82,11 +79,8 @@ test('Initializing with plugins', () => {
 
   expect(eremiteWithPlugins).toBeDefined()
 
-  // @ts-expect-error
-  pluginsGetItem = ActionQueue.mock.calls[1][0].getItem
-
-  // @ts-expect-error
-  pluginsSetItem = ActionQueue.mock.calls[1][0].setItem
+  pluginsGetItem = eremiteWithPlugins._getGetItem()
+  pluginsSetItem = eremiteWithPlugins._getSetItem()
 
   expect(pluginsGetItem).toBeDefined()
   expect(pluginsSetItem).toBeDefined()
