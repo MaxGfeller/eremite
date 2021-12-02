@@ -34,6 +34,7 @@ export class Eremite extends EventEmitter {
     plugins?: EremitePlugin[]
     offline?: boolean
     resources?: { [name: string]: Resource<any> }
+    actionQueueConcurrency?: number
   }) {
     super()
 
@@ -109,6 +110,7 @@ export class Eremite extends EventEmitter {
     }
 
     this.actionQueue = new ActionQueue({
+      concurrency: opts.actionQueueConcurrency,
       executeAction: async (action: ActionQueueItem) => {
         const result = await this.getResource(action.resource)._triggerAction(action.action, action.parameters, { temporaryIdentifiers: action.temporaryIdentifiers })
 
