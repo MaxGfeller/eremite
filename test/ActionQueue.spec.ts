@@ -1,6 +1,6 @@
 import { ActionQueue, Mutation } from '../src'
 import { ActionQueueItem } from '../src/ActionQueue'
-import { nextTick, sleep } from './utils'
+import { sleep } from './utils'
 
 let actionQueue: ActionQueue
 
@@ -39,7 +39,7 @@ test('Add action to queue persists it in store', async () => {
   })
     .catch((err) => expect(err).toBeFalsy())
 
-  await sleep(150)
+  await sleep(250)
 
   expect(persistState).toHaveBeenCalled()
   const storeQueue = persistState.mock.calls[0][0]
@@ -54,8 +54,7 @@ test('Add action to queue persists it in store', async () => {
 
 test('Action gets processed when queue is started', async () => {
   actionQueue.start()
-  await nextTick()
-  await nextTick()
+  await sleep(200)
 
   expect(executeAction.mock.calls[0][0].resource).toBe('foo')
   expect(persistState).toHaveBeenCalledWith([])
