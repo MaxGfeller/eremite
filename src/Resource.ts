@@ -339,6 +339,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
         mutation.addTemporaryIdentifier(identifier.label, identifier.temporaryId)
       })
     }
+
     const o = descriptor ? { [mutationContextKey]: mutation } : {}
     Object.setPrototypeOf(o, this)
 
