@@ -114,12 +114,6 @@ export class Eremite extends EventEmitter {
 
         return result
       },
-      getItem: async (name: string): Promise<any> => {
-        return await this.getItem(name)
-      },
-      setItem: async (name: string, value: any): Promise<void> => {
-        return await this.setItem(name, value)
-      },
       applyMutation: (actionId: string, resource: string, action: string, parameters: any[]): void => {
         this.getResource(resource).addPendingMutation(actionId, Date.now(), action, ...parameters)
       },
@@ -131,6 +125,13 @@ export class Eremite extends EventEmitter {
       },
       cancelMutation: (actionId: string, resource: string): void => {
         this.getResource(resource).cancelPendingMutation(actionId)
+      },
+      persistState: async (state: any): Promise<void> => {
+        await this.setItem('actionQueue', state)
+      },
+      loadState: async (): Promise<any> => {
+        const state = (await this.getItem('actionQueue')) ?? null
+        return state
       }
     })
 
