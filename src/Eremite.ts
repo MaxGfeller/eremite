@@ -18,7 +18,10 @@ export interface EremitePlugin {
   }
 }
 
-export class Eremite extends EventEmitter {
+interface EremiteEvents {
+  'connection': [boolean]
+}
+export class Eremite extends EventEmitter<EremiteEvents> {
   protected name: string
   protected store: LocalForage
   protected plugins: EremitePlugin[]
@@ -195,8 +198,10 @@ export class Eremite extends EventEmitter {
 
       if (connected) {
         this.actionQueue.start()
+        this.emit('connection', true)
       } else {
         this.actionQueue.pause()
+        this.emit('connection', false)
       }
     })
   }
@@ -204,11 +209,13 @@ export class Eremite extends EventEmitter {
   public disconnect (): void {
     this.disconnected = true
     this.actionQueue.pause()
+    this.emit('connection', false)
   }
 
   public reconnect (): void {
     this.disconnected = false
     if (this.connectionIndicator.isConnected()) {
+      this.emit('connection', true)
       this.actionQueue.start()
     }
   }
