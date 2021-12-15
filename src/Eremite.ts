@@ -25,6 +25,7 @@ export class Eremite extends EventEmitter {
   protected actionQueue: ActionQueue
   protected resources: { [name: string]: Resource<any> }
   protected connectionIndicator: ConnectionIndicator
+  protected disconnected: boolean = false
 
   constructor (opts: {
     name?: string
@@ -187,8 +188,10 @@ export class Eremite extends EventEmitter {
       }
     }
 
+    if (opts.offline) this.disconnected = true
+
     this.connectionIndicator.on('connection', (connected) => {
-      if (opts.offline) return
+      if (this.disconnected) return
 
       if (connected) {
         this.actionQueue.start()
@@ -196,6 +199,18 @@ export class Eremite extends EventEmitter {
         this.actionQueue.pause()
       }
     })
+  }
+
+  public disconnect (): void {
+    this.disconnected = true
+    this.actionQueue.pause()
+  }
+
+  public reconnect (): void {
+    this.disconnected = false
+    if (this.connectionIndicator.isConnected()) {
+      this.actionQueue.start()
+    }
   }
 
   public getActionQueue (): ActionQueue {
