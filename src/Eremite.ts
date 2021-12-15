@@ -206,6 +206,10 @@ export class Eremite extends EventEmitter<EremiteEvents> {
     })
   }
 
+  public isConnected (): boolean {
+    return !this.disconnected && this.connectionIndicator.isConnected()
+  }
+
   public disconnect (): void {
     this.disconnected = true
     this.actionQueue.pause()
