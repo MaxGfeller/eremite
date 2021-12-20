@@ -3,6 +3,7 @@ import { reactive, Ref, ref, toRaw, unref } from '@vue/reactivity'
 import { watch } from '@vue/runtime-core'
 import hash from 'object-hash'
 import { debounce } from 'debounce'
+import cloneDeep from 'lodash.clonedeep'
 import { createTemporaryIdentifier } from '.'
 
 // todo: symbols for all the property descriptors
@@ -160,7 +161,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   private computeMutatedState (): void {
     this.mutationsEmittingExternalMutations = {}
 
-    const newState: T = { ...JSON.parse(JSON.stringify(toRaw(this.state))) }
+    const newState: T = { ...cloneDeep(toRaw(this.state)) }
     const externalStateMutations: Array<{ id: string, ts: number, module: string, fn: (state: any) => void}> = []
     const externalStateMutationUpdates: Array<{ id: string, ts: number, module: string, fn: (state: any) => void}> = []
 
@@ -376,8 +377,8 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
   }
 
   getState (mutated: boolean = true): T {
-    if (mutated) return JSON.parse(JSON.stringify(unref(this.mutatedState))) as T
-    return JSON.parse(JSON.stringify(toRaw(this.state))) as T
+    if (mutated) return cloneDeep(unref(this.mutatedState)) as T
+    return cloneDeep(toRaw(this.state)) as T
   }
 
   abstract initialState (): T
