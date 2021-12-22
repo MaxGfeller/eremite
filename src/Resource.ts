@@ -191,7 +191,8 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
             const temporaryId = createTemporaryIdentifier()
             temporaryIdentifiers.push({ label, temporaryId })
             return temporaryId
-          }
+          },
+          isCommit: false
         }, ...mutation.parameters)
 
         if (emittedExternalMutation) {
@@ -270,7 +271,8 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
       state: this.state,
       mutateResourceState: (module: string, fn: (state: any) => void) => {
         externalStateMutations.push({ id, ts: mutation.ts, module, fn })
-      }
+      },
+      isCommit: true
     }, ...parameters)
 
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
