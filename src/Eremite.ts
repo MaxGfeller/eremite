@@ -228,6 +228,10 @@ export class Eremite extends EventEmitter<EremiteEvents> {
     return this.actionQueue
   }
 
+  public getStore (): LocalForage {
+    return this.store
+  }
+
   public getResource (name: string): Resource<any> {
     const resource = this.resources[name]
     if (!resource) throw new Error(`Resource\`${name}\` not found`)
