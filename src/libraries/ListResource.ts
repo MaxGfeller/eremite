@@ -114,6 +114,10 @@ export abstract class ListResource<T> extends Resource<ListResourceState<T>> {
 
     result.items.forEach((item, index) => {
       this.state.namespaces[namespace].items[from + index] = item
+      const id = this.getId(item)
+      if (id && this.state.items[id]) {
+        this.state.items[id] = { ...this.state.items[id], ...item }
+      }
     })
 
     return this.getListLocal(from, to, namespace)
