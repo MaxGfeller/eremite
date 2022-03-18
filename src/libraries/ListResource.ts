@@ -105,9 +105,9 @@ export abstract class ListResource<T> extends Resource<ListResourceState<T>> {
       result = await this.fetchList(from, to, namespace)
     }
 
-    if (result.total && result.total !== this.state.namespaces[namespace]?.total) {
+    if (!this.state.namespaces[namespace] || (result.total && result.total !== this.state.namespaces[namespace]?.total)) {
       this.state.namespaces[namespace] = {
-        total: result.total,
+        total: result.total as number,
         items: new Array(result.total).fill(null)
       }
     }
