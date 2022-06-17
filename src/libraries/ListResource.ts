@@ -27,6 +27,7 @@ export function addToBackMutation (opts: { state: ListResourceState<any> }, item
 
 export abstract class ListResource<T> extends Resource<ListResourceState<T>> {
   protected maxPageSize: number|null = null
+  protected detailFetches: { [id: string]: Promise<any> } = {}
 
   constructor (opts: { maxPageSize?: number } = {}) {
     super()
@@ -63,7 +64,22 @@ export abstract class ListResource<T> extends Resource<ListResourceState<T>> {
   @MaxTries({ tries: 1 })
   @Queueable()
   async getItem (id: string): Promise<T> {
-    const result = await this.fetchOne(id)
+    if (typeof this.detailFetches[id] !== 'undefined') {
+      await this.detailFetches[id]
+
+      const localItem = this.getItemLocal(id)
+      if (localItem) {
+        return localItem
+      }
+    }
+
+    // todo: keep list of current fetches to prevent multiple fetches of the same item
+    const fetch = this.fetchOne(id)
+    this.detailFetches[id] = fetch
+    const result = await fetch
+
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    delete this.detailFetches[id]
     if (!result) {
       throw new Error(`Item \`${id}\` not found`)
     }
