@@ -32,6 +32,21 @@ In a Javascript project, it can be done by using the [`@babel/plugin-proposal-de
 
 ## Storage
 
+Eremite uses [localForage](https://github.com/localForage/localForage) as its storage backend. When using it in the browser, it automatically uses the best available storage mechanism. Usually this is [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) but, it falls back to [localStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage) depending on the browser support.
+
+For tests you can use an [in-memory backend](https://www.npmjs.com/package/localforage-driver-memory):
+
+```typescript
+import * as memoryDriver from 'localforage-driver-memory'
+import { Eremite, BrowserConnectionIndicator } from '@cyon/eremite'
+
+const store = new Eremite({
+  connectionIndicator: new BrowserConnectionIndicator(),
+  forageDriverDefinition: memoryDriver,
+  forageDriver: memoryDriver._driver
+})
+```
+
 ## Connection Indicators
 
 The eremite store needs to know if there is an active connection to the backend of the application. That's why, when initializing a new Eremite store, you need to pass a connection indicator. The connection indicator is a class that implements the `ConnectionIndicator` interface and indicates if there is an active connection or not, and emits event in case it changes.
@@ -81,8 +96,6 @@ createStore({
   plugins: [ new MemoryCache() ]
 })
 ```
-
-### MemoryCache
 
 ### Encrypt
 
