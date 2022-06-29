@@ -26,7 +26,6 @@ interface ActionQueueEvents {
 }
 
 export class ActionQueue extends EventEmitter<ActionQueueEvents> {
-  protected storeQueue: PQueue
   protected actionQueue: PQueue
   protected executeAction: (item: ActionQueueItem) => Promise<{ result: any, mutation: Mutation }>
   protected applyMutation: (actionId: string, resource: string, action: string, parameters: any[]) => void
@@ -81,11 +80,11 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
     this.maxTries = opts.maxTries ?? 3
     this.retryWaitTime = opts.retryWaitTime ?? 1000
 
-    this.storeQueue = new PQueue({ concurrency: 1, autoStart: true })
     this.actionQueue = new PQueue({ concurrency: opts.concurrency ?? 10, autoStart: false })
 
     watch(this.actionQueueItems, () => {
       if (this.persistState) {
+        // todo: remove JSON parsing
         void this.persistState(JSON.parse(JSON.stringify(unref(this.actionQueueItems))))
       }
     }, { deep: true })
@@ -147,6 +146,8 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
       dependingOn.push(item.actionId as string)
       this.actionQueueItems.value.splice(this.actionQueueItems.value.findIndex(i => i.actionId === item.actionId, 1))
     }
+
+    // todo: re-initialize queue
   }
 
   protected processParameters (parameters: any[]): any[] {
