@@ -12,7 +12,7 @@ An `.npmrc` configuration file needs to be available, it can be copied from the 
 
 ## Prerequisites
 
-The project uses [class decorators](https://github.com/tc39/proposal-decorators), an ECMAScript proposal that is currently in stage 2. That's why right now it's neccessary to use a polyfill for it.
+The project uses [class decorators](https://github.com/tc39/proposal-decorators), an ECMAScript proposal that is currently in stage 3. That's why right now it's neccessary to use a polyfill for it.
 
 For a Typescript project, this can be done by adding the following to the `tsconfig.json` file:
 
@@ -29,6 +29,8 @@ In a Javascript project, it can be done by using the [`@babel/plugin-proposal-de
 ```typescript
 
 ```
+
+The Eremite store is meant to be your application's main logic layer.
 
 ## Storage
 
@@ -64,6 +66,8 @@ createStore({
 It is advised that you implement your own connection indicator, which also checks if your backend is reachable. You can utilize the `BrowserConnectionIndicator` and add your own checks.
 
 ## Resources
+
+Resources are meant to represent the resources you already have in your backend. Each resource has its own state as well as a set of defined actions.
 
 ### Mutations and Queue
 
