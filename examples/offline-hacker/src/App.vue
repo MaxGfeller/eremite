@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import useResource from "@cyon/eremite/vue-composables/useResource";
-import useResourceState from "@cyon/eremite/vue-composables/useResourceState";
+import useResource from "@eremite/vue/useResource";
+import useResourceState from "@eremite/vue/useResourceState";
 import type { Articles, ArticlesState } from "./store/Articles";
 
 const articles: Articles = useResource("articles");
