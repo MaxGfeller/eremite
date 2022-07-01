@@ -6,7 +6,6 @@ import { Resource } from '.'
 import { TemporaryIdentifier } from './Resource'
 
 export type Identifier = string | number | { [key: string]: any }
-
 export interface EremitePlugin {
   setItem?: {
     before?: (key: string, value: any, next: (key: string, value: any) => void) => Promise<void>
