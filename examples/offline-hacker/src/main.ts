@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import { Eremite, BrowserConnectionIndicator } from '@cyon/eremite'
+// @ts-ignore
 import EremiteVue from '@cyon/eremite/vue-composables/EremiteVue'
 import { Articles } from './store/Articles'
 

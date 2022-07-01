@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import type { Ref } from "vue";
+// @ts-ignore
 import useResource from "@eremite/vue/useResource";
+// @ts-ignore
 import useResourceState from "@eremite/vue/useResourceState";
 import type { Articles, ArticlesState } from "./store/Articles";
 
