@@ -1,4 +1,4 @@
-import { Eremite } from '@cyon/eremite'
+import { Eremite } from '../'
 
 export default {
   install (app, stores) {
