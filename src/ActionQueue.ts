@@ -66,7 +66,7 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
     this.loadState = opts.loadState
     this.loadState()
       .then((items) => {
-        this.actionQueueItems.value = items ?? []
+        this.actionQueueItems.value = items ? items.concat(this.actionQueueItems.value) : this.actionQueueItems.value
       })
       .catch((err) => {
         throw new Error(`Failed to load \`ActionQueue\` state: ${err.message as string}`)
