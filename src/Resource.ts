@@ -1,6 +1,5 @@
 import EventEmitter from 'eventemitter3'
-import { reactive, Ref, ref, toRaw, unref } from '@vue/reactivity'
-import { watch } from '@vue/runtime-core'
+import { reactive, Ref, ref, toRaw, unref, watch } from 'vue'
 import hash from 'object-hash'
 import { debounce } from 'debounce'
 import cloneDeep from 'lodash.clonedeep'
