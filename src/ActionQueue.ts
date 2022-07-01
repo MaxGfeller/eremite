@@ -148,7 +148,8 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
       this.actionQueueItems.value.splice(this.actionQueueItems.value.findIndex(i => i.actionId === item.actionId, 1))
     }
 
-    // todo: re-initialize queue
+    this.actionQueue.clear()
+    await this.pickup()
   }
 
   protected processParameters (parameters: any[]): any[] {
