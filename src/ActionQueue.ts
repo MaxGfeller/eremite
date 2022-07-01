@@ -244,6 +244,8 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
   }
 
   async pickup (): Promise<void> {
+    this.actionQueue.clear()
+
     this.actionQueueItems.value.forEach((queueItem) => {
       this.applyMutation(queueItem.actionId as string, queueItem.resource, queueItem.action, queueItem.parameters)
 
