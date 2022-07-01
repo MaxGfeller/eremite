@@ -382,7 +382,7 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
 
   getState (mutated: boolean = true): T {
     if (mutated) return cloneDeep(unref(this.mutatedState)) as T
-    return cloneDeep(toRaw(this.state)) as T
+    return cloneDeep(toRaw(this.state))
   }
 
   abstract initialState (): T
