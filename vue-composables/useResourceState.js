@@ -6,5 +6,6 @@ export default function useResourceState (resourceName, storeName = 'default') {
 
   const resource = store.getResource(resourceName)
   const state = resource.getReactiveState()
+
   return state
 }
