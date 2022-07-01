@@ -165,6 +165,7 @@ export class Eremite extends EventEmitter<EremiteEvents> {
         resource._setQueueAction(async (action: string, parameters: any[], opts: {
           maxTries?: number
           retryWaitTime?: number
+          session?: boolean
         } = {}): Promise<any> => {
           return await this.actionQueue.queueAction({
             resource: resourceName,

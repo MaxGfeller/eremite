@@ -1,13 +1,18 @@
 import { mutationKey } from '../Resource'
 
-export function Queueable (fn?: ({ pendingActions: Array<{}>, setDependency: (id: string) => void })) {
+// todo: scope angeben (falls nur "session" wird es beim Verlassen, resp. wieder öffnen, wieder gelöscht)
+
+export function Queueable (opts: {
+  session?: boolean
+  setDependencies?: ({ pendingActions: Array<{}>, setDependency: (id: string) => void })
+} = {}) {
   return (target: any, key: string, descriptor: PropertyDescriptor) => {
     const mutationPropertyDescriptor = Object.getOwnPropertyDescriptor(target, mutationKey)
 
     const fn = descriptor.value
 
     descriptor.value = function (...args: any[]) {
-      return target.queueAction.call(this, key, args)
+      return target.queueAction.call(this, key, args, { session: opts.session ?? false })
     }
 
     if (mutationPropertyDescriptor) {

@@ -13,6 +13,7 @@ export interface ActionQueueItem {
   action: string
   parameters: any[]
   dependingOn?: string
+  session?: boolean
   timesTried?: number
   maxTries?: number
   retryWaitTime?: number
@@ -66,7 +67,7 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
 
     this.loadState()
       .then((items) => {
-        this.actionQueueItems.value = items ? items.concat(this.actionQueueItems.value) : this.actionQueueItems.value
+        this.actionQueueItems.value = items ? items.filter(item => !item.session).concat(this.actionQueueItems.value) : this.actionQueueItems.value
       })
       .catch((err) => {
         throw new Error(`Failed to load \`ActionQueue\` state: ${err.message as string}`)
