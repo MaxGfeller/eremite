@@ -83,7 +83,7 @@ async createUser (user: User): Promise<User> {
 
   const result = await User.createUser(user)
 
-  mutation.updateTemporaryId('user', user.id)
+  mutation.updateTemporaryId('user', result.id)
 }
 ```
 
