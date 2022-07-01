@@ -9,6 +9,7 @@ import { createTemporaryIdentifier } from '.'
 export const mutationKey = Symbol('mutateFn')
 const mutationContextKey = Symbol('mutation')
 export const maxTriesKey = Symbol('maxTries')
+export const consolidateKey = Symbol('consolidateFn')
 
 export enum MutationState {
   ready,
@@ -136,7 +137,10 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     this.loadState = fn
     void this.loadState()
       .then((state: T) => {
-        if (state === null) return
+        if (state === null) {
+          this.emit('state:loaded', this.getState())
+          return
+        }
 
         Object.keys(state).forEach((key) => {
           // @ts-expect-error
