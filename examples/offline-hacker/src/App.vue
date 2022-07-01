@@ -20,17 +20,15 @@ const isArticleRead = computed(() => (articleId: number) => {
 </script>
 
 <template>
-  <header>
-    <ul>
-      <li v-for="articleId in articlesState.articleIds" :key="articleId">
-        <div v-if="articlesState.articles[articleId]">
-          <a :href="articlesState.articles[articleId].url" target="_blank" :style="{ textDecoration: isArticleRead(articleId) ? 'line-through' : 'none'}">{{ articlesState.articles[articleId].title }}</a>
-          - <a @click="markAsRead(articleId)">Mark article as read</a>
-        </div>
-        <span v-else>Loading...</span>
-      </li>
-    </ul>
-  </header>
+  <ul>
+    <li v-for="articleId in articlesState.articleIds" :key="articleId">
+      <div v-if="articlesState.articles[articleId]">
+        <a :href="articlesState.articles[articleId].url" target="_blank" :style="{ textDecoration: isArticleRead(articleId) ? 'line-through' : 'none'}">{{ articlesState.articles[articleId].title }}</a>
+        - <a @click="markAsRead(articleId)">Mark article as read</a>
+      </div>
+      <span v-else>Loading...</span>
+    </li>
+  </ul>
 </template>
 
 <style>
