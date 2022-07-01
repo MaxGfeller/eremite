@@ -180,16 +180,16 @@ export class Eremite extends EventEmitter<EremiteEvents> {
     })
       .then(() => {
         void this.actionQueue.pickup()
+
+        if (!opts.offline ?? true) {
+          if (this.connectionIndicator.isConnected()) {
+            this.actionQueue.start()
+          }
+        }
       })
       .catch((err) => {
         throw err
       })
-
-    if (!opts.offline ?? true) {
-      if (this.connectionIndicator.isConnected()) {
-        this.actionQueue.start()
-      }
-    }
 
     if (opts.offline) this.disconnected = true
 

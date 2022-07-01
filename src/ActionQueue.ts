@@ -34,7 +34,6 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
   protected cancelMutation: (actionId: string, resource: string) => void
   protected maxTries: number
   protected retryWaitTime: number
-
   protected temporaryIdentifiers: TemporaryIdentifier[] = []
   protected actionIdPromiseMapping: { [key: string]: Promise<any> } = {}
 
@@ -64,6 +63,7 @@ export class ActionQueue extends EventEmitter<ActionQueueEvents> {
     }, 100)
 
     this.loadState = opts.loadState
+
     this.loadState()
       .then((items) => {
         this.actionQueueItems.value = items ? items.concat(this.actionQueueItems.value) : this.actionQueueItems.value
