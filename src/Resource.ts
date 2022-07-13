@@ -367,8 +367,8 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
     // @ts-expect-error
     const maxTriesDescriptor = Object.getOwnPropertyDescriptor(this[action], maxTriesKey)
 
-    const _opts: { maxTries?: number, retryWaitTime?: number, session: boolean } = {
-      session: opts.session ?? false
+    const _opts: { maxTries?: number, retryWaitTime?: number, session?: boolean } = {
+      session: opts.session ?? undefined
     }
 
     if (maxTriesDescriptor?.value) {

@@ -1,7 +1,5 @@
 import { mutationKey } from '../Resource'
 
-// todo: scope angeben (falls nur "session" wird es beim Verlassen, resp. wieder öffnen, wieder gelöscht)
-
 export function Queueable (opts: {
   session?: boolean
   setDependencies?: ({ pendingActions: Array<{}>, setDependency: (id: string) => void })
@@ -12,7 +10,7 @@ export function Queueable (opts: {
     const fn = descriptor.value
 
     descriptor.value = function (...args: any[]) {
-      return target.queueAction.call(this, key, args, { session: opts.session ?? false })
+      return target.queueAction.call(this, key, args, { session: opts.session ?? undefined })
     }
 
     if (mutationPropertyDescriptor) {
