@@ -1,4 +1,5 @@
-import { Eremite, ListResource } from '../../src'
+import { Eremite } from '../../src'
+import { ListResource } from '../../src/libraries/ListResource'
 import { TestConnectionIndicator, nextTick } from '../utils'
 
 interface Ticket {
