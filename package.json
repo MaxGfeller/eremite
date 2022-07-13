@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "test": "echo 'No tests for you today'",
+    "test": "npx jest",
     "build": "tsc"
   },
   "repository": {
