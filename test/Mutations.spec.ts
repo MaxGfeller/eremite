@@ -135,6 +135,18 @@ test('Actually add to list', async () => {
   })
 })
 
+test('Cancel an external mutation', async () => {
+  myResource.cancelExternalMutations(['04'])
+
+  await sleep(0)
+  const state = myResource.getState()
+  expect(state).toEqual({
+    stringProp: 'baz',
+    numberProp: 5,
+    listProp: [ 'first', 'hello' ]
+  })
+})
+
 function sleep (ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
