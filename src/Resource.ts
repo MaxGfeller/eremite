@@ -217,7 +217,10 @@ export abstract class Resource<T extends Object> extends EventEmitter<ResourceEv
         .map(({ ts }, index) => ({ type: 'external', id: `${index}`, ts })))
       .sort((a, b) => a.ts - b.ts)
 
-    mutations.forEach(({ type, id }) => applyMutation(type as 'internal' | 'external', id))
+    for (let i = 0; i < mutations.length; i++) {
+      const { type, id } = mutations[i]
+      applyMutation(type as 'internal' | 'external', id)
+    }
 
     if (externalStateMutations.length) {
       this.emit('internal:externalMutations:create', externalStateMutations)
