@@ -5,7 +5,7 @@
 Eremite can currently be installed from Github using [npm](https://www.npmjs.com/):
 
 ```bash
-npm install @cyon/eremite
+npm install @eremitejs/eremite
 ```
 
 An `.npmrc` configuration file needs to be available, it can be copied from the `.npmrc.example`. Just make sure to add the API key.
