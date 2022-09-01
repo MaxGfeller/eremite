@@ -25,9 +25,10 @@ export class Eremite extends EventEmitter<EremiteEvents> {
   protected store: LocalForage
   protected plugins: EremitePlugin[]
   protected actionQueue: ActionQueue
-  protected resources: { [name: string]: Resource<any> }
+  protected resources: { [name: string]: Resource<any> } = {}
   protected connectionIndicator: ConnectionIndicator
   protected disconnected: boolean = false
+  protected getMutationsByModule: Function
 
   constructor (opts: {
     name?: string
@@ -44,52 +45,25 @@ export class Eremite extends EventEmitter<EremiteEvents> {
     this.name = opts.name ?? 'default'
 
     this.plugins = opts.plugins ?? []
-    this.resources = opts.resources ?? {}
     this.connectionIndicator = opts.connectionIndicator
 
-    Object.values(this.resources).forEach((resource) => {
-      const getMutationsByModule = (mutations: Array<{ module: string, id: string, ts?: number, fn?: (state: any) => void }>): { [module: string]: Array<{ id: string, ts?: number, fn?: (state: any) => void }> } => {
-        const mutationsByModule: { [module: string]: Array<{ id: string, ts: number, fn: (state: any) => void }> } = {}
+    this.getMutationsByModule = (mutations: Array<{ module: string, id: string, ts?: number, fn?: (state: any) => void }>): { [module: string]: Array<{ id: string, ts?: number, fn?: (state: any) => void }> } => {
+      const mutationsByModule: { [module: string]: Array<{ id: string, ts: number, fn: (state: any) => void }> } = {}
 
-        mutations.forEach(({ id, module, ts, fn }) => {
-          if (!mutationsByModule[module]) mutationsByModule[module] = []
-          mutationsByModule[module].push({ id, ts: ts as number, fn: fn as (state: any) => void })
-        })
-
-        return mutationsByModule
-      }
-      resource.on('internal:externalMutations:create', (mutations) => {
-        const mutationsByModule = getMutationsByModule(mutations)
-
-        Object.keys(mutationsByModule).forEach((module) => {
-          this.getResource(module).addExternalMutations(mutationsByModule[module] as Array<{ id: string, ts: number, fn: (state: any) => void }>)
-        })
+      mutations.forEach(({ id, module, ts, fn }) => {
+        if (!mutationsByModule[module]) mutationsByModule[module] = []
+        mutationsByModule[module].push({ id, ts: ts as number, fn: fn as (state: any) => void })
       })
 
-      resource.on('internal:externalMutations:update', (mutations) => {
-        const mutationsByModule = getMutationsByModule(mutations)
+      return mutationsByModule
+    }
 
-        Object.keys(mutationsByModule).forEach((module) => {
-          this.getResource(module).updateExternalMutations(mutationsByModule[module] as Array<{ id: string, ts: number, fn: (state: any) => void }>)
-        })
+    if (opts.resources) {
+      Object.keys(opts.resources).forEach((name) => {
+        // @ts-expect-error
+        this.addResource(name, opts.resources[name])
       })
-
-      resource.on('internal:externalMutations:commit', (mutations) => {
-        const mutationsByModule = getMutationsByModule(mutations)
-
-        Object.keys(mutationsByModule).forEach((module) => {
-          this.getResource(module).commitExternalMutations(mutationsByModule[module] as Array<{ id: string, ts: number, fn: (state: any) => void }>)
-        })
-      })
-
-      resource.on('internal:externalMutations:cancel', (mutations) => {
-        mutations.forEach((module) => {
-          Object.values(this.resources.forEach).forEach((resource) => {
-            resource.cancelExternalMutations(mutations)
-          })
-        })
-      })
-    })
+    }
 
     const storeName = opts.name ?? 'eremite'
     const forageOpts: LocalForageOptions = {
@@ -203,6 +177,40 @@ export class Eremite extends EventEmitter<EremiteEvents> {
         this.actionQueue.pause()
         this.emit('connection', false)
       }
+    })
+  }
+
+  public addResource (name: string, resource: Resource<any>): void {
+    this.resources[name] = resource
+
+    resource.on('internal:externalMutations:create', (mutations) => {
+      const mutationsByModule = this.getMutationsByModule(mutations)
+
+      Object.keys(mutationsByModule).forEach((module) => {
+        this.getResource(module).addExternalMutations(mutationsByModule[module] as Array<{ id: string, ts: number, fn: (state: any) => void }>)
+      })
+    })
+
+    resource.on('internal:externalMutations:update', (mutations) => {
+      const mutationsByModule = this.getMutationsByModule(mutations)
+
+      Object.keys(mutationsByModule).forEach((module) => {
+        this.getResource(module).updateExternalMutations(mutationsByModule[module] as Array<{ id: string, ts: number, fn: (state: any) => void }>)
+      })
+    })
+
+    resource.on('internal:externalMutations:commit', (mutations) => {
+      const mutationsByModule = this.getMutationsByModule(mutations)
+
+      Object.keys(mutationsByModule).forEach((module) => {
+        this.getResource(module).commitExternalMutations(mutationsByModule[module] as Array<{ id: string, ts: number, fn: (state: any) => void }>)
+      })
+    })
+
+    resource.on('internal:externalMutations:cancel', (mutations) => {
+      Object.values(this.resources).forEach((resource) => {
+        resource.cancelExternalMutations(mutations.map(({ id }) => id))
+      })
     })
   }
 
