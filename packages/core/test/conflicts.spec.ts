@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from 'vitest'
 import { collection, createStore, memoryStorage } from '../src'
 import type { MutatorCtx, Store, Tx } from '../src'
-import { httpError, networkError, waitUntil } from './utils'
+import { httpError, networkError, sleep, waitUntil } from './utils'
 
 interface Invoice { id: string, customer: string }
 interface LineItem { id: string, invoiceId: string | number, text: string }
@@ -164,6 +164,45 @@ test('network errors pause the queue instead of consuming attempts', async () =>
 
   expect(attempts).toBe(2)
   expect(store.snapshot.lineItems.get('li')?.$pending).toBeUndefined()
+})
+
+test('probes stay reported as offline until a push succeeds, then auto-recover', async () => {
+  let failNetwork = true
+  const onlineHistory: boolean[] = []
+
+  const store = createStore({
+    name: 'conflicts-probe',
+    storage: memoryStorage(),
+    collections,
+    retry: { baseDelayMs: 10, maxDelayMs: 20 },
+    mutators: {
+      addLineItem (tx: AppTx, input: LineItem) { tx.lineItems.set(input.id, input) }
+    },
+    push: {
+      addLineItem: () => {
+        if (failNetwork) throw networkError()
+      }
+    }
+  })
+  stores.push(store)
+  store.subscribe(() => onlineHistory.push(store.status.online))
+  await store.ready
+
+  const handle = store.mutate.addLineItem({ id: 'li', invoiceId: 1, text: 'x' })
+  await waitUntil(() => !store.status.online)
+
+  // several probe cycles run while the server is still down: the reported
+  // status must never flip back to online in between
+  await sleep(100)
+  expect(store.status.online).toBe(false)
+  expect(onlineHistory.slice(onlineHistory.indexOf(false)).includes(true)).toBe(false)
+
+  // heal the server: the next probe pushes successfully and the status
+  // recovers on its own, without setOnline()
+  failNetwork = false
+  const outcome = await handle.done
+  expect(outcome).toEqual({ status: 'committed' })
+  await waitUntil(() => store.status.online)
 })
 
 test('a custom onPushError policy overrides the default classification', async () => {

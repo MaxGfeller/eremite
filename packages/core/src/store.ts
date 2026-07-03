@@ -56,6 +56,8 @@ class EremiteStore<C extends CollectionsDef, M extends MutatorsDef<C>> {
   private consecutiveNetworkFailures = 0
   private retryTimer: ReturnType<typeof setTimeout> | null = null
   private probeTimer: ReturnType<typeof setTimeout> | null = null
+  /** True while a scheduled probe re-attempts pushes without claiming to be online. */
+  private probing = false
 
   private readonly releaseLeadership: () => void
   private readonly channel: TabChannel
@@ -131,9 +133,12 @@ class EremiteStore<C extends CollectionsDef, M extends MutatorsDef<C>> {
   setOnline (online: boolean): void {
     if (this.online === online) return
     this.online = online
+    this.probing = false
     if (online) {
       this.consecutiveNetworkFailures = 0
       void this.kickPush()
+    } else if (this.probeTimer) {
+      clearTimeout(this.probeTimer)
     }
     this.notify()
   }
@@ -149,6 +154,7 @@ class EremiteStore<C extends CollectionsDef, M extends MutatorsDef<C>> {
 
     const result = await def.fetch(args)
     if (this.closed) return result
+    this.markReachable()
 
     const drafts = this.makeDrafts()
     def.write(drafts as unknown as Tx<C>, result, args)
@@ -325,7 +331,7 @@ class EremiteStore<C extends CollectionsDef, M extends MutatorsDef<C>> {
   // ------------------------------------------------------------- push loop
 
   private kickPush (): Promise<void> {
-    if (!this.hydrated || !this.isLeader || this.closed || !this.online) {
+    if (!this.hydrated || !this.isLeader || this.closed || (!this.online && !this.probing)) {
       return this.pushing ?? Promise.resolve()
     }
     if (this.pushing) return this.pushing
@@ -338,7 +344,7 @@ class EremiteStore<C extends CollectionsDef, M extends MutatorsDef<C>> {
   }
 
   private async pushLoop (): Promise<void> {
-    while (!this.closed && this.online && this.ops.length > 0) {
+    while (!this.closed && (this.online || this.probing) && this.ops.length > 0) {
       const op = this.ops[0]
       const input = substituteRefs(op.input, ref => this.idMap.get(ref))
 
@@ -362,10 +368,12 @@ class EremiteStore<C extends CollectionsDef, M extends MutatorsDef<C>> {
             resolve: (label, realId) => { this.resolveRef(op, label, realId) }
           })
           this.consecutiveNetworkFailures = 0
+          this.markReachable()
         } catch (error) {
           const verdict = this.classifyPushError(error, op)
 
           if (verdict === 'offline') {
+            this.probing = false
             this.goOffline()
             return
           }
@@ -395,6 +403,18 @@ class EremiteStore<C extends CollectionsDef, M extends MutatorsDef<C>> {
       }
 
       await this.commitOp(op)
+      // a local-only op (no push handler) proves nothing about reachability,
+      // so only handler success flips the probing state above
+      if (handler) this.probing = false
+    }
+  }
+
+  /** A server round-trip succeeded — reflect reachability in the status. */
+  private markReachable (): void {
+    this.probing = false
+    if (!this.online) {
+      this.online = true
+      this.notify()
     }
   }
 
@@ -413,6 +433,12 @@ class EremiteStore<C extends CollectionsDef, M extends MutatorsDef<C>> {
     return 'retry'
   }
 
+  /**
+   * Mark the backend unreachable and schedule a probe. The probe re-runs the
+   * push loop *without* reporting online — the status only flips back once a
+   * push (or pull) actually succeeds, so the UI never claims a connection
+   * that is still down.
+   */
   private goOffline (): void {
     this.online = false
     this.consecutiveNetworkFailures++
@@ -422,8 +448,7 @@ class EremiteStore<C extends CollectionsDef, M extends MutatorsDef<C>> {
     if (this.probeTimer) clearTimeout(this.probeTimer)
     this.probeTimer = setTimeout(() => {
       if (this.closed || this.online) return
-      this.online = true
-      this.notify()
+      this.probing = true
       void this.kickPush()
     }, delay)
   }
