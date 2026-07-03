@@ -1,6 +1,7 @@
 <script setup lang="ts">
-// A cute hooded hermit holding a candle. One bell-shaped silhouette so it
-// still reads at 16-32px; face, blush and flame carry the charm at 160px.
+// A cute take on the Hermit: hooded, white-bearded, holding a little
+// lantern. One bell-shaped silhouette so it still reads at 16-32px;
+// the beard, blush and lantern glow carry the charm at 160px.
 withDefaults(defineProps<{ halo?: boolean }>(), { halo: false })
 </script>
 
@@ -10,9 +11,9 @@ withDefaults(defineProps<{ halo?: boolean }>(), { halo: false })
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     role="img"
-    aria-label="Eremite.js — a peaceful hooded hermit holding a candle"
+    aria-label="Eremite.js — a peaceful bearded hermit holding a lantern"
   >
-    <!-- Candlelight halo (hero size only) -->
+    <!-- Lantern-light halo (hero size only) -->
     <g v-if="halo" class="halo">
       <circle cx="60" cy="48" r="42" fill="none" stroke="#dcb85f" stroke-width="2.5" opacity="0.9" />
       <circle cx="60" cy="48" r="42" fill="#dcb85f" opacity="0.12" />
@@ -50,26 +51,54 @@ withDefaults(defineProps<{ halo?: boolean }>(), { halo: false })
     />
 
     <!-- Closed, contented eyes -->
-    <path d="M48 54 Q52 49.8 56 54" stroke="#3d2817" stroke-width="2.4" stroke-linecap="round" fill="none" />
-    <path d="M64 54 Q68 49.8 72 54" stroke="#3d2817" stroke-width="2.4" stroke-linecap="round" fill="none" />
+    <path d="M48 52.5 Q52 48.3 56 52.5" stroke="#3d2817" stroke-width="2.4" stroke-linecap="round" fill="none" />
+    <path d="M64 52.5 Q68 48.3 72 52.5" stroke="#3d2817" stroke-width="2.4" stroke-linecap="round" fill="none" />
     <!-- Rosy cheeks -->
-    <circle cx="46.5" cy="59.5" r="3.6" fill="#d98c6a" opacity="0.55" />
-    <circle cx="73.5" cy="59.5" r="3.6" fill="#d98c6a" opacity="0.55" />
-    <!-- Peaceful smile -->
-    <path d="M55.5 60.5 Q60 65 64.5 60.5" stroke="#3d2817" stroke-width="2.2" stroke-linecap="round" fill="none" />
+    <circle cx="46" cy="57.5" r="3.4" fill="#d98c6a" opacity="0.55" />
+    <circle cx="74" cy="57.5" r="3.4" fill="#d98c6a" opacity="0.55" />
+    <!-- Little nose -->
+    <circle cx="60" cy="57" r="2.4" fill="#dcae82" />
 
-    <!-- Candle warmth -->
-    <circle cx="60" cy="78" r="11" fill="#d9a13f" opacity="0.18" />
-    <!-- Flame -->
-    <path d="M60 67.5 C62.8 71.2 63 74.4 60 76 C57 74.4 57.2 71.2 60 67.5 Z" fill="#d9a13f" />
-    <path d="M60 70.5 C61.4 72.3 61.5 73.9 60 74.8 C58.5 73.9 58.6 72.3 60 70.5 Z" fill="#f3d27a" />
-    <!-- Candle -->
-    <rect x="56" y="77.5" width="8" height="14" rx="2.4" fill="#f6ecd7" stroke="#d9c6a2" stroke-width="0.9" />
-    <!-- Little hands holding it -->
-    <circle cx="51" cy="87" r="4.8" fill="#f0d6b3" />
-    <circle cx="69" cy="87" r="4.8" fill="#f0d6b3" />
+    <!-- The hermit's white beard -->
+    <path
+      d="M45.5 54
+         C42.5 65 45.5 75.5 52.5 79.5
+         Q60 83.5 67.5 79.5
+         C74.5 75.5 77.5 65 74.5 54
+         C70.5 59 65.5 61 60 61
+         C54.5 61 49.5 59 45.5 54 Z"
+      fill="#e9e0d2"
+    />
+    <!-- Beard strands -->
+    <path d="M54 66 Q56.5 72 60 74" stroke="#cfc3ae" stroke-width="1.6" stroke-linecap="round" fill="none" />
+    <path d="M66 66 Q63.5 72 60 74" stroke="#cfc3ae" stroke-width="1.6" stroke-linecap="round" fill="none" />
+    <!-- Moustache over the top of the beard -->
+    <path
+      d="M60 59.5
+         C56.5 57.2 51.5 57.8 49.5 60.5
+         C52 63 57 63.6 60 61.6
+         C63 63.6 68 63 70.5 60.5
+         C68.5 57.8 63.5 57.2 60 59.5 Z"
+      fill="#f4ece0"
+    />
+
+    <!-- Lantern glow -->
+    <circle cx="60" cy="91" r="12.5" fill="#d9a13f" opacity="0.2" />
+    <!-- Lantern: ring, cap, gold frame, glowing pane -->
+    <circle cx="60" cy="80.5" r="2.2" stroke="#b0842a" stroke-width="1.6" fill="none" />
+    <path d="M54.5 84.5 Q60 79.5 65.5 84.5 Z" fill="#b0842a" />
+    <rect x="53" y="84" width="14" height="14.5" rx="2.6" fill="#b0842a" />
+    <rect x="55.3" y="86.3" width="9.4" height="10" rx="1.4" fill="#f3d27a" />
+    <!-- Tiny flame inside -->
+    <path d="M60 88 C61.6 90.2 61.7 92.2 60 93.2 C58.3 92.2 58.4 90.2 60 88 Z" fill="#c47b2e" />
+    <!-- Frame bars -->
+    <path d="M58 86.3 L58 96.3 M62 86.3 L62 96.3" stroke="#b0842a" stroke-width="1.1" />
+
+    <!-- Little hands holding the lantern -->
+    <circle cx="50" cy="91" r="4.8" fill="#f0d6b3" />
+    <circle cx="70" cy="91" r="4.8" fill="#f0d6b3" />
     <!-- Sleeve cuffs -->
-    <path d="M46 84.5 Q49 81.5 53.5 82.5" stroke="#4a2f1c" stroke-width="2.4" stroke-linecap="round" fill="none" />
-    <path d="M74 84.5 Q71 81.5 66.5 82.5" stroke="#4a2f1c" stroke-width="2.4" stroke-linecap="round" fill="none" />
+    <path d="M45 88.5 Q48 85.5 52.5 86.5" stroke="#4a2f1c" stroke-width="2.4" stroke-linecap="round" fill="none" />
+    <path d="M75 88.5 Q72 85.5 67.5 86.5" stroke="#4a2f1c" stroke-width="2.4" stroke-linecap="round" fill="none" />
   </svg>
 </template>
