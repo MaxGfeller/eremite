@@ -28,6 +28,7 @@ test('the first write clones the map; the base is never touched', () => {
   expect(draft.result()).not.toBe(base)
   expect(base.has('c')).toBe(false)
   expect(draft.has('c')).toBe(true)
+  expect(draft.keys()).toEqual(['a', 'b', 'c'])
 })
 
 test('update clones the entity, never mutating the base entity', () => {

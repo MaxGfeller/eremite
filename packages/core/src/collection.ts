@@ -96,6 +96,10 @@ export class DraftCollection<T extends object> {
     return this.map.size
   }
 
+  keys (): string[] {
+    return [...this.map.keys()]
+  }
+
   all (): T[] {
     return [...this.map.values()].map(v => structuredClone(v))
   }
