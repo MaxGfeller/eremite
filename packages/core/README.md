@@ -209,10 +209,6 @@ Bump `version` when your entity shapes change: by default Eremite drops cached b
 3. **Inputs are data.** They're structured-cloned and persisted — no functions, no class instances.
 4. **Cross-collection writes are normal.** The draft spans all collections; a counter update next to an insert is one atomic mutation.
 
-## Status & history
-
-This is a ground-up rewrite (v0.1.x) of a 2021-22 prototype. The core ideas survived — resource-oriented state, a persistent action queue, optimistic mutations replayed over confirmed state — but the implementation replaced decorators with plain config, closures-as-cross-resource-mutations with whole-store mutators, string-sniffed temporary IDs with persisted refs + automatic dependency ordering, localForage blobs with per-record IndexedDB rows, and Vue-coupled internals with a framework-agnostic snapshot/subscribe core. Runnable Vue and React example apps live in [`examples/`](https://github.com/eremitejs/eremite/tree/main/examples).
-
 ## License
 
 MIT
