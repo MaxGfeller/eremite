@@ -22,6 +22,7 @@ interface Db {
   nextId: number
   tasks: ServerTask[]
   seenKeys: Record<string, number>
+  down?: boolean
 }
 
 const STORAGE_KEY = 'eremite-example-fake-server'
@@ -40,8 +41,13 @@ function save (): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(db))
 }
 
-/** Flip `down` to simulate the backend being unreachable. */
-export const serverState = { down: false }
+/** Flip `down` to simulate the backend being unreachable. The flag is
+ * persisted with the rest of the "server", so an outage survives reloads —
+ * which is exactly the scenario worth playing with. */
+export const serverState = {
+  get down (): boolean { return db.down ?? false },
+  set down (value: boolean) { db.down = value; save() }
+}
 
 async function latency (): Promise<void> {
   await new Promise(resolve => setTimeout(resolve, 350 + Math.random() * 350))
