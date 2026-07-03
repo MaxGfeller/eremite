@@ -1,47 +1,54 @@
 {
   "name": "@eremitejs/eremite",
-  "version": "0.0.46",
-  "description": "",
-  "main": "dist/index.js",
+  "version": "0.1.0",
+  "description": "Offline-first data layer for apps talking to any REST backend: persistent outbox, optimistic rebase, and first-class handling of server-assigned IDs.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "test": "npx jest",
-    "build": "tsc"
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/eremitejs/eremite.git"
   },
-  "author": "Max Gfeller <mg@cyon.ch>",
+  "author": "Max Gfeller <mail@maxgfeller.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/eremitejs/eremite/issues"
   },
   "homepage": "https://github.com/eremitejs/eremite#readme",
   "devDependencies": {
-    "@types/debounce": "^1.2.1",
-    "@types/jest": "^27.0.1",
-    "@types/lodash.clonedeep": "^4.5.6",
-    "@types/uuid": "^8.3.1",
-    "eslint": "^7.32.0",
-    "eslint-config-standard-with-typescript": "^21.0.1",
-    "jest": "^26.6.3",
-    "localforage-driver-memory": "^1.0.5",
-    "ts-jest": "^26.5.6",
-    "ts-node": "^10.2.1",
-    "typescript": "^4.4.3"
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "vue": "^3.5.0"
   },
-  "dependencies": {
-    "@types/object-hash": "^2.2.1",
-    "@vue/reactivity": "^3.2.37",
-    "@vue/runtime-core": "^3.2.37",
-    "debounce": "^1.2.1",
-    "eventemitter3": "^4.0.7",
-    "localforage": "^1.10.0",
-    "lodash.clonedeep": "^4.5.0",
-    "object-hash": "^2.2.0",
-    "p-queue": "^6.6.2",
-    "unstorage": "^0.2.9",
-    "uuid": "^8.3.2",
-    "vue": "^3.2.37"
+  "peerDependencies": {
+    "vue": ">=3.3"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    }
   }
 }
