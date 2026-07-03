@@ -1,11 +1,11 @@
-# Eremite.js
+# @eremitejs/core
 
 **An offline-first data layer for apps that talk to any REST backend.**
 
-Eremite gives your app a local, optimistic view of server data that keeps working without a connection. Writes go into a persistent outbox and are pushed to your API when connectivity allows — in order, exactly once, surviving page reloads. Unlike sync engines (Replicache/Zero, PowerSync, ElectricSQL, …), Eremite requires **nothing special on the server**: if you can call it with `fetch`, you can go offline-first with it.
+Eremite gives your app a local, optimistic view of server data that keeps working without a connection. Writes go into a persistent outbox and are pushed to your API when connectivity allows — in order, exactly once, surviving page reloads. Eremite requires **nothing special on the server**: if you can call it with `fetch`, you can go offline-first with it.
 
-- **Zero runtime dependencies.** IndexedDB, Web Locks, BroadcastChannel, `crypto` — the platform provides everything now.
-- **Framework-agnostic core** with a Vue 3 adapter (`@eremitejs/vue`). React and others are a thin `subscribe` bridge away.
+- **Zero runtime dependencies.** IndexedDB, Web Locks, BroadcastChannel, `crypto` — the platform provides everything.
+- **Framework-agnostic core** with official bindings for Vue ([`@eremitejs/vue`](https://github.com/eremitejs/eremite/tree/main/packages/vue)) and React ([`@eremitejs/react`](https://github.com/eremitejs/eremite/tree/main/packages/react)).
 - **First-class handling of IDs and relations** — including backends that insist on assigning IDs themselves.
 
 ```bash
@@ -97,7 +97,7 @@ store.mutate.createTodo({ id: store.id(), projectId, title: 'First task', done: 
 
 ### Server-assigned IDs: refs
 
-Most existing backends mint their own IDs. For those, a mutator can declare a **ref** — a stable placeholder that the push handler later resolves to the real ID:
+Many backends mint their own IDs. For those, a mutator can declare a **ref** — a stable placeholder that the push handler later resolves to the real ID:
 
 ```ts
 mutators: {
@@ -134,7 +134,7 @@ What Eremite guarantees about refs:
 - **Grouped failure.** If the producing op is rejected, every dependent op is dropped with it and surfaced as one coherent group of conflicts.
 - **Self-healing state.** Derived state is recomputed from base + ops, so entities keyed by a ref automatically re-key to the real ID; base state never contains a ref.
 
-The one thing it cannot hide: an entity's key changes from the ref to the real ID at commit. Prefer client-generated IDs wherever the backend allows them.
+The one thing refs cannot hide: an entity's key changes from the ref to the real ID at commit. Prefer client-generated IDs wherever your backend allows them.
 
 ## Errors, retries and conflicts
 
@@ -142,9 +142,11 @@ Push failures are classified (`onPushError` lets you override):
 
 | Failure | Default behavior |
 |---|---|
-| Network error (fetch `TypeError`) | Store goes **offline**, op keeps waiting; retries with backoff, no attempt is consumed |
+| Network error (fetch `TypeError`) | Store goes **offline**, op keeps waiting; reconnection is probed with backoff, no attempt is consumed |
 | HTTP 408 / 425 / 429 / 5xx | **Retry** with exponential backoff, up to `retry.maxAttempts` (default 5) |
 | Other 4xx | **Drop**: the op's optimistic effect is rolled back and it becomes a *conflict* |
+
+While offline, the reported status stays offline until a push or pull actually succeeds — the UI never claims a connection that is still down.
 
 Conflicts are persisted and yours to present:
 
@@ -163,34 +165,27 @@ const outcome = await done      // { status: 'committed' } | { status: 'dropped'
 
 ## Reads: pulls
 
-Reads never enter the outbox (queueing a *fetch* for later replay makes no sense — that was one of the original design's mistakes). A pull fetches, then atomically writes into base state; pending ops are rebased on top, so an optimistic edit is never clobbered by a refetch racing it. Pulled data is persisted per record and hydrates instantly on the next launch, giving you stale-while-revalidate for free.
+Reads take a different path than writes — they are never queued for later replay. A pull fetches, then atomically writes into base state; pending ops are rebased on top, so an optimistic edit is never clobbered by a refetch racing it. Pulled data is persisted per record and hydrates instantly on the next launch, giving you stale-while-revalidate for free.
 
 ```ts
 await store.pull('todos', { projectId })
 ```
 
-## Vue
+In the `write` step you decide how server data lands in your collections — merge it in, or replace a collection wholesale (`tx.todos.keys()` lets you drop rows the server no longer has).
 
-```vue
-<script setup lang="ts">
-import { useQuery, usePull, useSyncStatus } from '@eremitejs/vue'
-import { store } from '../store'
+## Framework bindings
 
-const props = defineProps<{ projectId: string }>()
+The core is plain `snapshot` + `subscribe`, so it works with any UI layer. The official bindings cover the common patterns:
 
-const todos = useQuery(store, s => s.todos.where(t => t.projectId === props.projectId))
-const { loading } = usePull(store, 'todos', () => ({ projectId: props.projectId }))
-const { online, pendingOps, conflicts } = useSyncStatus(store)
-</script>
+```ts
+import { useQuery, usePull, useSyncStatus } from '@eremitejs/vue'    // or '@eremitejs/react'
 
-<template>
-  <TodoItem v-for="t in todos" :key="t.id" :todo="t" :pending="t.$pending" />
-  <OfflineBanner v-if="!online" :queued="pendingOps" />
-  <ConflictList :conflicts="conflicts" />
-</template>
+const todos = useQuery(store, s => s.todos.where(t => !t.done))     // reactive selection
+const { loading, error, refetch } = usePull(store, 'todos')          // server read
+const { online, pendingOps, conflicts } = useSyncStatus(store)       // sync UI state
 ```
 
-The core is plain `snapshot` + `subscribe`; a React adapter is ~10 lines of `useSyncExternalStore`.
+See the [`@eremitejs/vue`](https://github.com/eremitejs/eremite/tree/main/packages/vue) and [`@eremitejs/react`](https://github.com/eremitejs/eremite/tree/main/packages/react) READMEs for the details, and the [examples](https://github.com/eremitejs/eremite/tree/main/examples) for complete apps in both frameworks.
 
 ## Multi-tab
 
@@ -198,7 +193,7 @@ In the browser, tabs elect a single **leader** via the Web Locks API; only the l
 
 ## Storage & versioning
 
-Persistence defaults to IndexedDB (`idbStorage`), with per-record rows for base state and single documents for the outbox, ID map and conflicts. Pass `storage: memoryStorage()` in tests, `storage: null` to disable persistence, or implement the four-method `StorageAdapter` interface for anything else.
+Persistence defaults to IndexedDB (`idbStorage`), with per-record rows for base state and single documents for the outbox, ID map and conflicts. Pass `storage: memoryStorage()` in tests, `storage: null` to disable persistence, or implement the five-method `StorageAdapter` interface for anything else.
 
 Bump `version` when your entity shapes change: by default Eremite drops cached base state (it can be refetched) and **keeps the outbox** (it's user data). Provide `onVersionChange` for custom migrations.
 
@@ -208,6 +203,29 @@ Bump `version` when your entity shapes change: by default Eremite drops cached b
 2. **Tolerate missing entities.** `tx.update(id, fn)` is a no-op when the entity is absent; replays run against states where a pull may have removed it.
 3. **Inputs are data.** They're structured-cloned and persisted — no functions, no class instances.
 4. **Cross-collection writes are normal.** The draft spans all collections; a counter update next to an insert is one atomic mutation.
+
+## API overview
+
+```ts
+const store = createStore({ name, version?, storage?, collections, mutators, push?, pulls?, retry?, onPushError?, multiTab?, onVersionChange? })
+
+await store.ready                     // persisted state loaded
+store.id()                            // new client-generated UUIDv7
+store.mutate.<name>(input)            // → { result, done, opId }
+await store.pull(name, args?)         // run a server read
+store.snapshot.<collection>           // .get(id) .has(id) .all() .where(fn) .keys() .entries() .size
+store.subscribe(listener)             // → unsubscribe
+store.status                          // { online, syncing, pendingOps }
+store.conflicts                       // Conflict[]
+store.pendingOps                      // OpRecord[] (copies)
+store.retryConflict(opId)
+store.discardConflict(opId)
+store.setOnline(boolean)              // manual connectivity override
+await store.flush()                   // wait for the push loop to settle
+store.close()
+```
+
+Everything is fully typed: `store.mutate`, mutator `tx` drafts and snapshot collections all derive their types from your `collections` and `mutators` config.
 
 ## License
 
