@@ -1,8 +1,8 @@
 import { afterEach, expect, test } from 'vitest'
 import { effectScope } from 'vue'
-import { collection, createStore, memoryStorage } from '../src'
-import type { Store, Tx } from '../src'
-import { useQuery, useSyncStatus } from '../src/vue'
+import { collection, createStore, memoryStorage } from '@eremitejs/core'
+import type { Store, Tx } from '@eremitejs/core'
+import { useQuery, useSyncStatus } from '../src'
 
 interface Todo { id: string, title: string, done: boolean }
 

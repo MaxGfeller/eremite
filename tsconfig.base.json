@@ -5,12 +5,9 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "strict": true,
-    "noUncheckedIndexedAccess": false,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "declaration": true,
-    "outDir": "dist",
-    "noEmit": true
-  },
-  "include": ["src", "test"]
+    "forceConsistentCasingInFileNames": true
+  }
 }

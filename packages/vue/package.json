@@ -1,0 +1,58 @@
+{
+  "name": "@eremitejs/vue",
+  "version": "0.1.0",
+  "description": "Vue 3 composables for Eremite, the offline-first data layer: useQuery, usePull, useSyncStatus.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "offline-first",
+    "vue",
+    "composables",
+    "optimistic-updates",
+    "local-first"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/eremitejs/eremite.git",
+    "directory": "packages/vue"
+  },
+  "author": "Max Gfeller <mail@maxgfeller.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/eremitejs/eremite/issues"
+  },
+  "homepage": "https://github.com/eremitejs/eremite#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@eremitejs/core": "workspace:^",
+    "vue": ">=3.3"
+  },
+  "devDependencies": {
+    "@eremitejs/core": "workspace:*",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "vue": "^3.5.0"
+  }
+}

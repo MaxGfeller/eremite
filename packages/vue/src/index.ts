@@ -1,5 +1,5 @@
 /**
- * Vue 3 adapter. Import from `@eremitejs/eremite/vue`.
+ * Vue 3 adapter for Eremite (`@eremitejs/vue`).
  *
  * The core is framework-agnostic (immutable snapshots + subscribe); these
  * composables bridge it into Vue's reactivity via a version counter, so
@@ -10,7 +10,7 @@ import {
   computed, getCurrentScope, onScopeDispose, ref, shallowRef, watch, toValue
 } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter, Ref, ShallowRef } from 'vue'
-import type { Conflict, SyncStatus } from './types'
+import type { Conflict, SyncStatus } from '@eremitejs/core'
 
 interface SubscribableStore {
   snapshot: unknown

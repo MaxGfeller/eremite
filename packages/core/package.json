@@ -1,0 +1,56 @@
+{
+  "name": "@eremitejs/core",
+  "version": "0.1.0",
+  "description": "Offline-first data layer for apps talking to any REST backend: persistent outbox, optimistic rebase, and first-class handling of server-assigned IDs.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "offline-first",
+    "offline",
+    "optimistic-updates",
+    "outbox",
+    "sync",
+    "local-first",
+    "indexeddb",
+    "state-management"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/eremitejs/eremite.git",
+    "directory": "packages/core"
+  },
+  "author": "Max Gfeller <mail@maxgfeller.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/eremitejs/eremite/issues"
+  },
+  "homepage": "https://github.com/eremitejs/eremite#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

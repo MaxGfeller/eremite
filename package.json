@@ -1,54 +1,14 @@
 {
-  "name": "@eremitejs/eremite",
-  "version": "0.1.0",
-  "description": "Offline-first data layer for apps talking to any REST backend: persistent outbox, optimistic rebase, and first-class handling of server-assigned IDs.",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./vue": {
-      "types": "./dist/vue.d.ts",
-      "import": "./dist/vue.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "sideEffects": false,
+  "name": "eremitejs",
+  "private": true,
+  "packageManager": "pnpm@10.33.2",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com/eremitejs/eremite.git"
-  },
-  "author": "Max Gfeller <mail@maxgfeller.com>",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/eremitejs/eremite/issues"
-  },
-  "homepage": "https://github.com/eremitejs/eremite#readme",
-  "devDependencies": {
-    "typescript": "^5.6.0",
-    "vitest": "^2.1.0",
-    "vue": "^3.5.0"
-  },
-  "peerDependencies": {
-    "vue": ">=3.3"
-  },
-  "peerDependenciesMeta": {
-    "vue": {
-      "optional": true
-    }
+    "build": "pnpm -r run build",
+    "test": "pnpm run build:packages && pnpm -r run test",
+    "typecheck": "pnpm run build:packages && pnpm -r run typecheck",
+    "build:packages": "pnpm -r --filter './packages/*' run build"
   }
 }
