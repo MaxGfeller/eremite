@@ -1,6 +1,6 @@
 # @eremitejs/vue
 
-Vue 3 composables for [Eremite](https://github.com/eremitejs/eremite), the offline-first data layer for apps talking to any REST backend.
+Vue 3 composables for [Eremite](https://github.com/MaxGfeller/eremite), the offline-first data layer for apps talking to any REST backend.
 
 ```bash
 npm install @eremitejs/core @eremitejs/vue
@@ -37,7 +37,7 @@ const { online, syncing, pendingOps, conflicts } = useSyncStatus(store)
 - **`usePull(store, name, args?)`** → `{ loading, error, refetch }`; `args` may be a ref or getter and re-triggers the pull when it changes.
 - **`useSyncStatus(store)`** → `{ online, syncing, pendingOps, conflicts }` as computed refs.
 
-See the [core documentation](https://github.com/eremitejs/eremite/tree/main/packages/core) for stores, mutators, refs and conflicts, and [`examples/hacker-news-vue`](https://github.com/eremitejs/eremite/tree/main/examples/hacker-news-vue) / [`examples/tasks-vue`](https://github.com/eremitejs/eremite/tree/main/examples/tasks-vue) for runnable apps.
+See the [core documentation](https://github.com/MaxGfeller/eremite/tree/main/packages/core) for stores, mutators, refs and conflicts, and [`examples/hacker-news-vue`](https://github.com/MaxGfeller/eremite/tree/main/examples/hacker-news-vue) / [`examples/tasks-vue`](https://github.com/MaxGfeller/eremite/tree/main/examples/tasks-vue) for runnable apps.
 
 ## License
 

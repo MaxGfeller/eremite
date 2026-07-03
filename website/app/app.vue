@@ -1,158 +1,218 @@
 <script setup lang="ts">
 // Single-page marketing site for Eremite.js. ssr: false, statically generated.
 
-const repo = 'https://github.com/eremitejs/eremite'
-const docs = 'https://github.com/eremitejs/eremite/tree/main/packages/core'
-const vuePkg = 'https://github.com/eremitejs/eremite/tree/main/packages/vue'
-const reactPkg = 'https://github.com/eremitejs/eremite/tree/main/packages/react'
-const examples = 'https://github.com/eremitejs/eremite/tree/main/examples'
+const repo = "https://github.com/MaxGfeller/eremite";
+const docs = "https://github.com/MaxGfeller/eremite/tree/main/packages/core";
+const vuePkg = "https://github.com/MaxGfeller/eremite/tree/main/packages/vue";
+const reactPkg =
+    "https://github.com/MaxGfeller/eremite/tree/main/packages/react";
+const examples = "https://github.com/MaxGfeller/eremite/tree/main/examples";
 
 const features = [
-  {
-    numeral: 'I',
-    title: 'The outbox & the optimistic rebase',
-    body:
-      'Confirmed "base state" is kept apart from your pending changes. The screen always shows base state plus pending operations replayed in order, so a rollback can never corrupt data. Anything still waiting for the server carries a $pending mark.',
-  },
-  {
-    numeral: 'II',
-    title: 'Any backend, nothing to install',
-    body:
-      'No sync engine, no bespoke protocol, no server of its own to run. If you can reach your API with fetch, you can go offline-first. There are zero runtime dependencies: the browser already ships IndexedDB, Web Locks, BroadcastChannel and crypto.',
-  },
-  {
-    numeral: 'III',
-    title: 'Server-assigned IDs, kept honest',
-    body:
-      'Placeholder refs stand in for IDs your server has not assigned yet, across relations, reloads and retries. Operations that depend on one wait their turn automatically. If the create is rejected, everything that depended on it rolls back with it and shows up as a single group of conflicts to retry or discard.',
-  },
-  {
-    numeral: 'IV',
-    title: 'Safe across every tab',
-    body:
-      'Open tabs elect a leader through Web Locks, so an action is never submitted twice. Writes reach your API in order and exactly once, even if the tab was closed halfway through.',
-  },
-]
+    {
+        numeral: "I",
+        title: "The outbox & the optimistic rebase",
+        body: 'Confirmed "base state" is kept apart from your pending changes. The screen always shows base state plus pending operations replayed in order, so a rollback can never corrupt data. Anything still waiting for the server carries a $pending mark.',
+    },
+    {
+        numeral: "II",
+        title: "Any backend, nothing to install",
+        body: "No sync engine, no bespoke protocol, no server of its own to run. If you can reach your API with fetch, you can go offline-first. There are zero runtime dependencies: the browser already ships IndexedDB, Web Locks, BroadcastChannel and crypto.",
+    },
+    {
+        numeral: "III",
+        title: "Server-assigned IDs, kept honest",
+        body: "Placeholder refs stand in for IDs your server has not assigned yet, across relations, reloads and retries. Operations that depend on one wait their turn automatically. If the create is rejected, everything that depended on it rolls back with it and shows up as a single group of conflicts to retry or discard.",
+    },
+    {
+        numeral: "IV",
+        title: "Safe across every tab",
+        body: "Open tabs elect a leader through Web Locks, so an action is never submitted twice. Writes reach your API in order and exactly once, even if the tab was closed halfway through.",
+    },
+];
 </script>
 
 <template>
-  <div class="min-h-dvh flex flex-col">
-    <!-- ============================ Header ============================ -->
-    <header
-      class="sticky top-0 z-30 backdrop-blur-sm border-b border-walnut/15"
-      style="background: color-mix(in srgb, var(--color-parchment) 82%, transparent)"
-    >
-      <div class="mx-auto max-w-6xl px-5 sm:px-8 h-16 flex items-center justify-between">
-        <a href="#top" class="flex items-center gap-2.5 group">
-          <MonkLogo class="h-9 w-9 shrink-0 transition-transform group-hover:-rotate-3" />
-          <span class="font-display text-xl tracking-tight text-bark">
-            Eremite<span class="text-gold">.js</span>
-          </span>
-        </a>
-        <nav class="flex items-center gap-1 sm:gap-2">
-          <a
-            :href="'#how'"
-            class="hidden sm:inline-block px-3 py-2 text-sm text-ink-mute hover:text-bark transition-colors"
-          >How it works</a>
-          <a
-            :href="'#install'"
-            class="hidden sm:inline-block px-3 py-2 text-sm text-ink-mute hover:text-bark transition-colors"
-          >Install</a>
-          <a
-            :href="repo"
-            class="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-bark rounded-full border border-walnut/25 hover:border-walnut/50 hover:bg-parchment-2 transition-colors"
-          >
-            <svg viewBox="0 0 16 16" class="h-4 w-4" fill="currentColor" aria-hidden="true">
-              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
-            </svg>
-            GitHub
-          </a>
-        </nav>
-      </div>
-    </header>
-
-    <main id="top" class="flex-1">
-      <!-- ============================= Hero ============================= -->
-      <section class="relative overflow-hidden">
-        <!-- soft candlelight glow behind the hero -->
-        <div
-          class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 h-[520px] w-[820px] max-w-full opacity-70"
-          style="background: radial-gradient(closest-side, rgba(216,178,90,0.35), transparent 70%)"
-          aria-hidden="true"
-        ></div>
-
-        <div class="relative mx-auto max-w-6xl px-5 sm:px-8 pt-16 pb-14 lg:pt-24 lg:pb-20">
-          <div class="grid xl:grid-cols-2 gap-12 xl:gap-10 items-center">
-            <!-- Left: pitch -->
-            <div class="min-w-0">
-              <p class="rise font-mono text-xs tracking-[0.35em] uppercase text-gold" style="animation-delay: 40ms">
-                Offline-first data layer
-              </p>
-
-              <h1
-                class="rise mt-5 font-display text-6xl sm:text-7xl leading-[0.92] tracking-tight text-bark"
-                style="animation-delay: 120ms"
-              >
-                Eremite<span class="text-gold">.js</span>
-              </h1>
-
-              <p
-                class="rise mt-6 font-display text-2xl sm:text-3xl leading-snug text-walnut-deep max-w-xl"
-                style="animation-delay: 200ms"
-              >
-                Your app, in quiet retreat from the network.
-              </p>
-
-              <p
-                class="rise dropcap mt-6 text-lg leading-relaxed text-ink-soft max-w-xl"
-                style="animation-delay: 280ms"
-              >
-                Eremite.js is a zero-dependency data layer for apps that speak to
-                <em>any</em> REST backend. Reads are kept locally in IndexedDB and paint
-                instantly on the next visit. Writes take effect in the UI at once, wait in a
-                durable outbox, and are delivered to your API in order and exactly once. Like
-                a hermit, your app answers to no one: if fetch can reach your server, you can
-                go offline-first.
-              </p>
-
-              <div class="rise mt-9 flex flex-wrap items-center gap-3" style="animation-delay: 360ms">
-                <a
-                  :href="docs"
-                  class="inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium text-vellum bg-walnut hover:bg-walnut-deep shadow-[0_14px_30px_-14px_rgba(61,40,23,0.8)] transition-colors"
-                >
-                  Read the docs
-                  <span aria-hidden="true">→</span>
+    <div class="min-h-dvh flex flex-col">
+        <!-- ============================ Header ============================ -->
+        <header
+            class="sticky top-0 z-30 backdrop-blur-sm border-b border-walnut/15"
+            style="
+                background: color-mix(
+                    in srgb,
+                    var(--color-parchment) 82%,
+                    transparent
+                );
+            "
+        >
+            <div
+                class="mx-auto max-w-6xl px-5 sm:px-8 h-16 flex items-center justify-between"
+            >
+                <a href="#top" class="flex items-center gap-2.5 group">
+                    <MonkLogo
+                        class="h-9 w-9 shrink-0 transition-transform group-hover:-rotate-3"
+                    />
+                    <span class="font-display text-xl tracking-tight text-bark">
+                        Eremite<span class="text-gold">.js</span>
+                    </span>
                 </a>
-                <a
-                  :href="repo"
-                  class="inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium text-bark border border-walnut/30 hover:bg-parchment-2 transition-colors"
-                >
-                  View on GitHub
-                </a>
-              </div>
-
-              <ul class="rise mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-mute font-mono" style="animation-delay: 440ms">
-                <li>· zero runtime deps</li>
-                <li>· exactly-once writes</li>
-                <li>· multi-tab safe</li>
-                <li>· MIT licensed</li>
-              </ul>
+                <nav class="flex items-center gap-1 sm:gap-2">
+                    <a
+                        :href="'#how'"
+                        class="hidden sm:inline-block px-3 py-2 text-sm text-ink-mute hover:text-bark transition-colors"
+                        >How it works</a
+                    >
+                    <a
+                        :href="'#install'"
+                        class="hidden sm:inline-block px-3 py-2 text-sm text-ink-mute hover:text-bark transition-colors"
+                        >Install</a
+                    >
+                    <a
+                        :href="repo"
+                        class="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-bark rounded-full border border-walnut/25 hover:border-walnut/50 hover:bg-parchment-2 transition-colors"
+                    >
+                        <svg
+                            viewBox="0 0 16 16"
+                            class="h-4 w-4"
+                            fill="currentColor"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+                            />
+                        </svg>
+                        GitHub
+                    </a>
+                </nav>
             </div>
+        </header>
 
-            <!-- Right: monk + scripture code -->
-            <div class="rise min-w-0" style="animation-delay: 320ms">
-              <div class="flex justify-center mb-6">
-                <MonkLogo :halo="true" class="h-40 w-40 drop-shadow-[0_18px_28px_rgba(61,40,23,0.28)]" />
-              </div>
+        <main id="top" class="flex-1">
+            <!-- ============================= Hero ============================= -->
+            <section class="relative overflow-hidden">
+                <!-- soft candlelight glow behind the hero -->
+                <div
+                    class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 h-[520px] w-[820px] max-w-full opacity-70"
+                    style="
+                        background: radial-gradient(
+                            closest-side,
+                            rgba(216, 178, 90, 0.35),
+                            transparent 70%
+                        );
+                    "
+                    aria-hidden="true"
+                ></div>
 
-              <figure class="scripture rounded-[var(--radius-card)] p-5 sm:p-6">
-                <figcaption class="flex items-center gap-2 mb-4 pl-8">
-                  <span class="h-3 w-3 rounded-full bg-ember/70"></span>
-                  <span class="h-3 w-3 rounded-full bg-gold/70"></span>
-                  <span class="h-3 w-3 rounded-full bg-sage/60"></span>
-                  <span class="ml-2 font-mono text-xs text-ink-mute">store.ts</span>
-                </figcaption>
-                <pre class="pl-8 overflow-x-auto text-ink"><code><span class="tok-kw">import</span> { collection, createStore } <span class="tok-kw">from</span> <span class="tok-str">'@eremitejs/core'</span>
+                <div
+                    class="relative mx-auto max-w-6xl px-5 sm:px-8 pt-16 pb-14 lg:pt-24 lg:pb-20"
+                >
+                    <div
+                        class="grid xl:grid-cols-2 gap-12 xl:gap-10 items-center"
+                    >
+                        <!-- Left: pitch -->
+                        <div class="min-w-0">
+                            <p
+                                class="rise font-mono text-xs tracking-[0.35em] uppercase text-gold"
+                                style="animation-delay: 40ms"
+                            >
+                                Offline-first data layer
+                            </p>
+
+                            <h1
+                                class="rise mt-5 font-display text-6xl sm:text-7xl leading-[0.92] tracking-tight text-bark"
+                                style="animation-delay: 120ms"
+                            >
+                                Eremite<span class="text-gold">.js</span>
+                            </h1>
+
+                            <p
+                                class="rise mt-6 font-display text-2xl sm:text-3xl leading-snug text-walnut-deep max-w-xl"
+                                style="animation-delay: 200ms"
+                            >
+                                Your app, in quiet retreat from the network.
+                            </p>
+
+                            <p
+                                class="rise dropcap mt-6 text-lg leading-relaxed text-ink-soft max-w-xl"
+                                style="animation-delay: 280ms"
+                            >
+                                Eremite.js is a zero-dependency data layer for
+                                apps that speak to
+                                <em>any</em> REST backend. Reads are kept
+                                locally in IndexedDB and paint instantly on the
+                                next visit. Writes take effect in the UI at
+                                once, wait in a durable outbox, and are
+                                delivered to your API in order and exactly once.
+                                Like a hermit, your app answers to no one: if
+                                fetch can reach your server, you can go
+                                offline-first.
+                            </p>
+
+                            <div
+                                class="rise mt-9 flex flex-wrap items-center gap-3"
+                                style="animation-delay: 360ms"
+                            >
+                                <a
+                                    :href="docs"
+                                    class="inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium text-vellum bg-walnut hover:bg-walnut-deep shadow-[0_14px_30px_-14px_rgba(61,40,23,0.8)] transition-colors"
+                                >
+                                    Read the docs
+                                    <span aria-hidden="true">→</span>
+                                </a>
+                                <a
+                                    :href="repo"
+                                    class="inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium text-bark border border-walnut/30 hover:bg-parchment-2 transition-colors"
+                                >
+                                    View on GitHub
+                                </a>
+                            </div>
+
+                            <ul
+                                class="rise mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-mute font-mono"
+                                style="animation-delay: 440ms"
+                            >
+                                <li>· zero runtime deps</li>
+                                <li>· exactly-once writes</li>
+                                <li>· multi-tab safe</li>
+                                <li>· MIT licensed</li>
+                            </ul>
+                        </div>
+
+                        <!-- Right: monk + scripture code -->
+                        <div
+                            class="rise min-w-0"
+                            style="animation-delay: 320ms"
+                        >
+                            <div class="flex justify-center mb-6">
+                                <MonkLogo
+                                    :halo="true"
+                                    class="h-40 w-40 drop-shadow-[0_18px_28px_rgba(61,40,23,0.28)]"
+                                />
+                            </div>
+
+                            <figure
+                                class="scripture rounded-[var(--radius-card)] p-5 sm:p-6"
+                            >
+                                <figcaption
+                                    class="flex items-center gap-2 mb-4 pl-8"
+                                >
+                                    <span
+                                        class="h-3 w-3 rounded-full bg-ember/70"
+                                    ></span>
+                                    <span
+                                        class="h-3 w-3 rounded-full bg-gold/70"
+                                    ></span>
+                                    <span
+                                        class="h-3 w-3 rounded-full bg-sage/60"
+                                    ></span>
+                                    <span
+                                        class="ml-2 font-mono text-xs text-ink-mute"
+                                        >store.ts</span
+                                    >
+                                </figcaption>
+                                <pre
+                                    class="pl-8 overflow-x-auto text-ink"
+                                ><code><span class="tok-kw">import</span> { collection, createStore } <span class="tok-kw">from</span> <span class="tok-str">'@eremitejs/core'</span>
 
 <span class="tok-kw">const</span> store = <span class="tok-fn">createStore</span>({
   name: <span class="tok-str">'app'</span>,
@@ -174,133 +234,235 @@ store.mutate.<span class="tok-fn">addTodo</span>({
   id: store.<span class="tok-fn">id</span>(),
   title: <span class="tok-str">'Ship it'</span>
 })</code></pre>
-              </figure>
+                            </figure>
 
-              <p class="mt-3 text-center xl:text-right text-sm text-ink-mute font-mono flex items-center gap-2 justify-center xl:justify-end">
-                <span class="pending-dot inline-block h-2 w-2 rounded-full bg-gold"></span>
-                entities awaiting sync carry <code class="text-walnut">$pending</code>
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+                            <p
+                                class="mt-3 text-center xl:text-right text-sm text-ink-mute font-mono flex items-center gap-2 justify-center xl:justify-end"
+                            >
+                                <span
+                                    class="pending-dot inline-block h-2 w-2 rounded-full bg-gold"
+                                ></span>
+                                entities awaiting sync carry
+                                <code class="text-walnut">$pending</code>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-      <!-- ======================= How it works ======================= -->
-      <section id="how" class="mx-auto max-w-6xl px-5 sm:px-8 py-14 lg:py-20">
-        <div class="rule mb-4 font-mono text-xs tracking-[0.3em] uppercase">
-          <span>The rule of the order</span>
-        </div>
-        <h2 class="font-display text-4xl sm:text-5xl text-bark tracking-tight max-w-2xl">
-          Four rules, kept strictly
-        </h2>
-        <p class="mt-4 text-lg text-ink-soft max-w-2xl">
-          Eremite never mixes confirmed data with pending changes. Everything else follows
-          from that.
-        </p>
+            <!-- ======================= How it works ======================= -->
+            <section
+                id="how"
+                class="mx-auto max-w-6xl px-5 sm:px-8 py-14 lg:py-20"
+            >
+                <div
+                    class="rule mb-4 font-mono text-xs tracking-[0.3em] uppercase"
+                >
+                    <span>The rule of the order</span>
+                </div>
+                <h2
+                    class="font-display text-4xl sm:text-5xl text-bark tracking-tight max-w-2xl"
+                >
+                    Four rules, kept strictly
+                </h2>
+                <p class="mt-4 text-lg text-ink-soft max-w-2xl">
+                    Eremite never mixes confirmed data with pending changes.
+                    Everything else follows from that.
+                </p>
 
-        <div class="mt-12 grid sm:grid-cols-2 gap-5 lg:gap-6">
-          <article
-            v-for="f in features"
-            :key="f.numeral"
-            class="vellum rounded-[var(--radius-card)] p-7 flex gap-5 transition-transform duration-300 hover:-translate-y-1"
-          >
-            <span
-              class="font-display text-4xl leading-none text-gold shrink-0 w-10"
-              aria-hidden="true"
-            >{{ f.numeral }}</span>
-            <div>
-              <h3 class="font-display text-2xl text-walnut-deep leading-tight">{{ f.title }}</h3>
-              <p class="mt-3 leading-relaxed text-ink-soft">{{ f.body }}</p>
-            </div>
-          </article>
-        </div>
-      </section>
+                <div class="mt-12 grid sm:grid-cols-2 gap-5 lg:gap-6">
+                    <article
+                        v-for="f in features"
+                        :key="f.numeral"
+                        class="vellum rounded-[var(--radius-card)] p-7 flex gap-5 transition-transform duration-300 hover:-translate-y-1"
+                    >
+                        <span
+                            class="font-display text-4xl leading-none text-gold shrink-0 w-10"
+                            aria-hidden="true"
+                            >{{ f.numeral }}</span
+                        >
+                        <div>
+                            <h3
+                                class="font-display text-2xl text-walnut-deep leading-tight"
+                            >
+                                {{ f.title }}
+                            </h3>
+                            <p class="mt-3 leading-relaxed text-ink-soft">
+                                {{ f.body }}
+                            </p>
+                        </div>
+                    </article>
+                </div>
+            </section>
 
-      <!-- ========================= Any backend ========================= -->
-      <section class="mx-auto max-w-6xl px-5 sm:px-8 pb-6">
-        <div
-          class="vellum rounded-[var(--radius-card)] px-7 sm:px-10 py-9 flex flex-col md:flex-row md:items-center gap-6 md:gap-10"
-          style="background: linear-gradient(120deg, rgba(255,252,244,0.92), rgba(233,214,182,0.7))"
-        >
-          <p class="font-display text-2xl sm:text-3xl text-bark leading-snug md:flex-1">
-            Bring your own backend.
-          </p>
-          <p class="text-ink-soft leading-relaxed md:flex-1">
-            Eremite.js lives entirely in the browser. It withdraws from the network when it
-            has to and catches up when it can, while your API stays a plain REST API. The
-            core is framework-agnostic, with official
-            <a :href="vuePkg" class="text-walnut underline decoration-gold/60 underline-offset-4 hover:decoration-gold">Vue 3</a>
-            and
-            <a :href="reactPkg" class="text-walnut underline decoration-gold/60 underline-offset-4 hover:decoration-gold">React</a>
-            bindings.
-          </p>
-        </div>
-      </section>
+            <!-- ========================= Any backend ========================= -->
+            <section class="mx-auto max-w-6xl px-5 sm:px-8 pb-6">
+                <div
+                    class="vellum rounded-[var(--radius-card)] px-7 sm:px-10 py-9 flex flex-col md:flex-row md:items-center gap-6 md:gap-10"
+                    style="
+                        background: linear-gradient(
+                            120deg,
+                            rgba(255, 252, 244, 0.92),
+                            rgba(233, 214, 182, 0.7)
+                        );
+                    "
+                >
+                    <p
+                        class="font-display text-2xl sm:text-3xl text-bark leading-snug md:flex-1"
+                    >
+                        Bring your own backend.
+                    </p>
+                    <p class="text-ink-soft leading-relaxed md:flex-1">
+                        Eremite.js lives entirely in the browser. It withdraws
+                        from the network when it has to and catches up when it
+                        can, while your API stays a plain REST API. The core is
+                        framework-agnostic, with official
+                        <a
+                            :href="vuePkg"
+                            class="text-walnut underline decoration-gold/60 underline-offset-4 hover:decoration-gold"
+                            >Vue 3</a
+                        >
+                        and
+                        <a
+                            :href="reactPkg"
+                            class="text-walnut underline decoration-gold/60 underline-offset-4 hover:decoration-gold"
+                            >React</a
+                        >
+                        bindings.
+                    </p>
+                </div>
+            </section>
 
-      <!-- =========================== Install =========================== -->
-      <section id="install" class="mx-auto max-w-6xl px-5 sm:px-8 py-14 lg:py-20">
-        <div class="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-          <div>
-            <div class="rule mb-4 font-mono text-xs tracking-[0.3em] uppercase">
-              <span>Take up the habit</span>
-            </div>
-            <h2 class="font-display text-4xl sm:text-5xl text-bark tracking-tight">
-              Two packages, and you are in retreat
-            </h2>
-            <p class="mt-4 text-lg text-ink-soft max-w-md">
-              Install the core, then add the binding for your framework. Everything is MIT
-              licensed and ships with no runtime dependencies.
-            </p>
-            <div class="mt-7 flex flex-wrap gap-2 font-mono text-sm">
-              <span class="px-3 py-1.5 rounded-full bg-parchment-3 text-walnut-deep border border-walnut/15">@eremitejs/core</span>
-              <span class="px-3 py-1.5 rounded-full bg-parchment-3 text-walnut-deep border border-walnut/15">@eremitejs/vue</span>
-              <span class="px-3 py-1.5 rounded-full bg-parchment-3 text-walnut-deep border border-walnut/15">@eremitejs/react</span>
-            </div>
-          </div>
+            <!-- =========================== Install =========================== -->
+            <section
+                id="install"
+                class="mx-auto max-w-6xl px-5 sm:px-8 py-14 lg:py-20"
+            >
+                <div class="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+                    <div>
+                        <div
+                            class="rule mb-4 font-mono text-xs tracking-[0.3em] uppercase"
+                        >
+                            <span>Take up the habit</span>
+                        </div>
+                        <h2
+                            class="font-display text-4xl sm:text-5xl text-bark tracking-tight"
+                        >
+                            Two packages, and you are in retreat
+                        </h2>
+                        <p class="mt-4 text-lg text-ink-soft max-w-md">
+                            Install the core, then add the binding for your
+                            framework. Everything is MIT licensed and ships with
+                            no runtime dependencies.
+                        </p>
+                        <div
+                            class="mt-7 flex flex-wrap gap-2 font-mono text-sm"
+                        >
+                            <span
+                                class="px-3 py-1.5 rounded-full bg-parchment-3 text-walnut-deep border border-walnut/15"
+                                >@eremitejs/core</span
+                            >
+                            <span
+                                class="px-3 py-1.5 rounded-full bg-parchment-3 text-walnut-deep border border-walnut/15"
+                                >@eremitejs/vue</span
+                            >
+                            <span
+                                class="px-3 py-1.5 rounded-full bg-parchment-3 text-walnut-deep border border-walnut/15"
+                                >@eremitejs/react</span
+                            >
+                        </div>
+                    </div>
 
-          <figure class="scripture min-w-0 rounded-[var(--radius-card)] p-5 sm:p-6">
-            <figcaption class="pl-8 mb-4 font-mono text-xs text-ink-mute">terminal</figcaption>
-            <pre class="pl-8 overflow-x-auto text-ink"><code><span class="tok-com"># the self-sufficient core</span>
+                    <figure
+                        class="scripture min-w-0 rounded-[var(--radius-card)] p-5 sm:p-6"
+                    >
+                        <figcaption
+                            class="pl-8 mb-4 font-mono text-xs text-ink-mute"
+                        >
+                            terminal
+                        </figcaption>
+                        <pre
+                            class="pl-8 overflow-x-auto text-ink"
+                        ><code><span class="tok-com"># the self-sufficient core</span>
 <span class="tok-fn">npm</span> install @eremitejs/core
 
 <span class="tok-com"># then your framework binding</span>
 <span class="tok-fn">npm</span> install @eremitejs/vue   <span class="tok-com"># or @eremitejs/react</span></code></pre>
-          </figure>
-        </div>
-      </section>
-    </main>
+                    </figure>
+                </div>
+            </section>
+        </main>
 
-    <!-- ============================ Footer ============================ -->
-    <footer class="border-t border-walnut/15 mt-4">
-      <div class="mx-auto max-w-6xl px-5 sm:px-8 py-12">
-        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-10">
-          <div class="max-w-xs">
-            <a href="#top" class="flex items-center gap-2.5">
-              <MonkLogo class="h-8 w-8" />
-              <span class="font-display text-lg text-bark">Eremite<span class="text-gold">.js</span></span>
-            </a>
-            <p class="mt-4 text-sm text-ink-mute leading-relaxed">
-              An offline-first data layer for apps that talk to any REST backend. Withdraw from
-              the network; keep working.
-            </p>
-          </div>
+        <!-- ============================ Footer ============================ -->
+        <footer class="border-t border-walnut/15 mt-4">
+            <div class="mx-auto max-w-6xl px-5 sm:px-8 py-12">
+                <div
+                    class="flex flex-col sm:flex-row sm:items-start justify-between gap-10"
+                >
+                    <div class="max-w-xs">
+                        <a href="#top" class="flex items-center gap-2.5">
+                            <MonkLogo class="h-8 w-8" />
+                            <span class="font-display text-lg text-bark"
+                                >Eremite<span class="text-gold">.js</span></span
+                            >
+                        </a>
+                        <p class="mt-4 text-sm text-ink-mute leading-relaxed">
+                            An offline-first data layer for apps that talk to
+                            any REST backend. Withdraw from the network; keep
+                            working.
+                        </p>
+                    </div>
 
-          <nav class="grid grid-cols-2 gap-x-12 gap-y-2.5 text-sm" aria-label="Footer">
-            <span class="col-span-2 font-mono text-xs tracking-[0.25em] uppercase text-gold mb-1">Packages & links</span>
-            <a :href="docs" class="text-ink-soft hover:text-bark transition-colors">Docs (core)</a>
-            <a :href="repo" class="text-ink-soft hover:text-bark transition-colors">GitHub</a>
-            <a :href="vuePkg" class="text-ink-soft hover:text-bark transition-colors">@eremitejs/vue</a>
-            <a :href="reactPkg" class="text-ink-soft hover:text-bark transition-colors">@eremitejs/react</a>
-            <a :href="examples" class="text-ink-soft hover:text-bark transition-colors">Examples</a>
-            <a :href="docs" class="text-ink-soft hover:text-bark transition-colors">@eremitejs/core</a>
-          </nav>
-        </div>
+                    <nav
+                        class="grid grid-cols-2 gap-x-12 gap-y-2.5 text-sm"
+                        aria-label="Footer"
+                    >
+                        <span
+                            class="col-span-2 font-mono text-xs tracking-[0.25em] uppercase text-gold mb-1"
+                            >Packages & links</span
+                        >
+                        <a
+                            :href="docs"
+                            class="text-ink-soft hover:text-bark transition-colors"
+                            >Docs (core)</a
+                        >
+                        <a
+                            :href="repo"
+                            class="text-ink-soft hover:text-bark transition-colors"
+                            >GitHub</a
+                        >
+                        <a
+                            :href="vuePkg"
+                            class="text-ink-soft hover:text-bark transition-colors"
+                            >@eremitejs/vue</a
+                        >
+                        <a
+                            :href="reactPkg"
+                            class="text-ink-soft hover:text-bark transition-colors"
+                            >@eremitejs/react</a
+                        >
+                        <a
+                            :href="examples"
+                            class="text-ink-soft hover:text-bark transition-colors"
+                            >Examples</a
+                        >
+                        <a
+                            :href="docs"
+                            class="text-ink-soft hover:text-bark transition-colors"
+                            >@eremitejs/core</a
+                        >
+                    </nav>
+                </div>
 
-        <div class="mt-10 pt-6 border-t border-walnut/12 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-ink-mute">
-          <p>MIT licensed · © 2026 Eremite.js</p>
-          <p class="font-mono text-xs">Built to work when the network won’t.</p>
-        </div>
-      </div>
-    </footer>
-  </div>
+                <div
+                    class="mt-10 pt-6 border-t border-walnut/12 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-ink-mute"
+                >
+                    <p>MIT licensed · © 2026 Eremite.js</p>
+                    <p class="font-mono text-xs">
+                        Built to work when the network won’t.
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </div>
 </template>

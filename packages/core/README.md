@@ -5,7 +5,7 @@
 Eremite gives your app a local, optimistic view of server data that keeps working without a connection. Writes go into a persistent outbox and are pushed to your API when connectivity allows — in order, exactly once, surviving page reloads. Eremite requires **nothing special on the server**: if you can call it with `fetch`, you can go offline-first with it.
 
 - **Zero runtime dependencies.** IndexedDB, Web Locks, BroadcastChannel, `crypto` — the platform provides everything.
-- **Framework-agnostic core** with official bindings for Vue ([`@eremitejs/vue`](https://github.com/eremitejs/eremite/tree/main/packages/vue)) and React ([`@eremitejs/react`](https://github.com/eremitejs/eremite/tree/main/packages/react)).
+- **Framework-agnostic core** with official bindings for Vue ([`@eremitejs/vue`](https://github.com/MaxGfeller/eremite/tree/main/packages/vue)) and React ([`@eremitejs/react`](https://github.com/MaxGfeller/eremite/tree/main/packages/react)).
 - **First-class handling of IDs and relations** — including backends that insist on assigning IDs themselves.
 
 ```bash
@@ -185,7 +185,7 @@ const { loading, error, refetch } = usePull(store, 'todos')          // server r
 const { online, pendingOps, conflicts } = useSyncStatus(store)       // sync UI state
 ```
 
-See the [`@eremitejs/vue`](https://github.com/eremitejs/eremite/tree/main/packages/vue) and [`@eremitejs/react`](https://github.com/eremitejs/eremite/tree/main/packages/react) READMEs for the details, and the [examples](https://github.com/eremitejs/eremite/tree/main/examples) for complete apps in both frameworks.
+See the [`@eremitejs/vue`](https://github.com/MaxGfeller/eremite/tree/main/packages/vue) and [`@eremitejs/react`](https://github.com/MaxGfeller/eremite/tree/main/packages/react) READMEs for the details, and the [examples](https://github.com/MaxGfeller/eremite/tree/main/examples) for complete apps in both frameworks.
 
 ## Multi-tab
 

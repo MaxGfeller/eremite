@@ -36,15 +36,15 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/eremitejs/eremite.git",
+    "url": "git+ssh://git@github.com/MaxGfeller/eremite.git",
     "directory": "packages/core"
   },
   "author": "Max Gfeller <mail@maxgfeller.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/eremitejs/eremite/issues"
+    "url": "https://github.com/MaxGfeller/eremite/issues"
   },
-  "homepage": "https://github.com/eremitejs/eremite#readme",
+  "homepage": "https://github.com/MaxGfeller/eremite#readme",
   "publishConfig": {
     "access": "public"
   },

@@ -1,6 +1,6 @@
 # @eremitejs/react
 
-React hooks for [Eremite](https://github.com/eremitejs/eremite), the offline-first data layer for apps talking to any REST backend.
+React hooks for [Eremite](https://github.com/MaxGfeller/eremite), the offline-first data layer for apps talking to any REST backend.
 
 ```bash
 npm install @eremitejs/core @eremitejs/react
@@ -38,7 +38,7 @@ export function TodoList ({ projectId }: { projectId: string }) {
 - **`useSyncStatus(store)`** → `{ online, syncing, pendingOps, conflicts }`.
 - **`useStoreVersion(store)`** → low-level change subscription for building custom hooks.
 
-See the [core documentation](https://github.com/eremitejs/eremite/tree/main/packages/core) for stores, mutators, refs and conflicts, and [`examples/hacker-news-react`](https://github.com/eremitejs/eremite/tree/main/examples/hacker-news-react) / [`examples/tasks-react`](https://github.com/eremitejs/eremite/tree/main/examples/tasks-react) for runnable apps.
+See the [core documentation](https://github.com/MaxGfeller/eremite/tree/main/packages/core) for stores, mutators, refs and conflicts, and [`examples/hacker-news-react`](https://github.com/MaxGfeller/eremite/tree/main/examples/hacker-news-react) / [`examples/tasks-react`](https://github.com/MaxGfeller/eremite/tree/main/examples/tasks-react) for runnable apps.
 
 ## License
 
