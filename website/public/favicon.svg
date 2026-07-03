@@ -1,12 +1,16 @@
 <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Eremite.js">
   <rect x="2" y="2" width="116" height="116" rx="26" fill="#f4e9d4"/>
   <rect x="2.5" y="2.5" width="115" height="115" rx="25.5" fill="none" stroke="#c9a24b" stroke-width="2"/>
-  <path d="M22 118 C20 88 30 68 60 68 C90 68 100 88 98 118 Z" fill="#6f4a2f"/>
-  <ellipse cx="60" cy="54" rx="24" ry="25" fill="#e8c9a0"/>
-  <path d="M60 16 C39 16 28 32 28 52 C28 64 34 73 44 77 C40 69 39 60 39 54 C39 42 48 35 60 35 C72 35 81 42 81 54 C81 60 80 69 76 77 C86 73 92 64 92 52 C92 32 81 16 60 16 Z" fill="#5a3b26"/>
-  <circle cx="49" cy="62" r="4.4" fill="#d98c6a" opacity="0.5"/>
-  <circle cx="71" cy="62" r="4.4" fill="#d98c6a" opacity="0.5"/>
-  <path d="M45 56 Q51 51 57 56" stroke="#3d2817" stroke-width="2.6" stroke-linecap="round" fill="none"/>
-  <path d="M63 56 Q69 51 75 56" stroke="#3d2817" stroke-width="2.6" stroke-linecap="round" fill="none"/>
-  <path d="M54 66 Q60 71.5 66 66" stroke="#3d2817" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+  <path d="M60 12 C40.5 12 31 28 31 45.5 C31 58.5 28.3 81.5 26 105 C25.7 108 27.4 110 30.3 110 L89.7 110 C92.6 110 94.3 108 94 105 C91.7 81.5 89 58.5 89 45.5 C89 28 79.5 12 60 12 Z" fill="#6f4a2f"/>
+  <circle cx="60" cy="52" r="22.5" fill="#4a2f1c"/>
+  <circle cx="60" cy="54" r="18.5" fill="#f0d6b3"/>
+  <path d="M48.5 56 Q52.2 52 56 56" stroke="#3d2817" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+  <path d="M64 56 Q67.8 52 71.5 56" stroke="#3d2817" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+  <circle cx="47" cy="61" r="3.4" fill="#d98c6a" opacity="0.55"/>
+  <circle cx="73" cy="61" r="3.4" fill="#d98c6a" opacity="0.55"/>
+  <path d="M55.8 62.5 Q60 66.6 64.2 62.5" stroke="#3d2817" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+  <path d="M60 70.5 C62.7 74 62.9 77 60 78.5 C57.1 77 57.3 74 60 70.5 Z" fill="#d9a13f"/>
+  <rect x="56.2" y="80" width="7.6" height="13" rx="2.3" fill="#f6ecd7" stroke="#d9c6a2"/>
+  <circle cx="51.5" cy="89" r="4.6" fill="#f0d6b3"/>
+  <circle cx="68.5" cy="89" r="4.6" fill="#f0d6b3"/>
 </svg>

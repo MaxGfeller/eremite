@@ -26,9 +26,9 @@
   --color-ember: #b0532c;
   --color-sage: #6d7a4f;
 
-  /* Type — a bookish serif for display, humanist body, mono for scripture */
+  /* Type — a bookish serif for display, a humanist sans for reading, mono for scripture */
   --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, ui-serif, serif;
-  --font-body: "Iowan Old Style", Palatino, Georgia, ui-serif, serif;
+  --font-body: Seravek, "Gill Sans Nova", Ubuntu, Calibri, "DejaVu Sans", source-sans-pro, ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
   --radius-card: 18px;
@@ -47,16 +47,28 @@ body {
   font-family: var(--font-body);
   color: var(--color-ink);
   background-color: var(--color-parchment);
-  /* Layered parchment texture: warm blooms + fine fibre grain */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Parchment texture lives on a fixed pseudo-element instead of a
+ * `background-attachment: fixed` body background: fixed attachments force
+ * a repaint of the whole gradient stack on every scroll frame, which
+ * shows up as flashes. A fixed element paints once and is composited.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-image:
     radial-gradient(120% 90% at 12% -10%, #fbf3e2 0%, transparent 55%),
     radial-gradient(120% 90% at 92% 0%, #f7ecd6 0%, transparent 50%),
     radial-gradient(140% 120% at 50% 120%, #e6d3b0 0%, transparent 60%),
     repeating-linear-gradient(0deg, rgba(120, 86, 52, 0.035) 0px, rgba(120, 86, 52, 0.035) 1px, transparent 1px, transparent 3px),
     repeating-linear-gradient(90deg, rgba(120, 86, 52, 0.025) 0px, rgba(120, 86, 52, 0.025) 1px, transparent 1px, transparent 4px);
-  background-attachment: fixed;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
@@ -129,8 +141,8 @@ button:focus-visible {
 }
 .scripture pre {
   font-family: var(--font-mono);
-  font-size: 0.86rem;
-  line-height: 1.75;
+  font-size: 0.78rem;
+  line-height: 1.8;
   tab-size: 2;
 }
 

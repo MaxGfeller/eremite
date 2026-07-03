@@ -12,25 +12,25 @@ const features = [
     numeral: 'I',
     title: 'The outbox & the optimistic rebase',
     body:
-      'Confirmed “base state” is kept apart from your pending changes. What the screen shows is always base state plus pending operations replayed in order, so a rollback can never corrupt data. Anything still awaiting the server wears a $pending mark.',
+      'Confirmed "base state" is kept apart from your pending changes. The screen always shows base state plus pending operations replayed in order, so a rollback can never corrupt data. Anything still waiting for the server carries a $pending mark.',
   },
   {
     numeral: 'II',
     title: 'Any backend, nothing to install',
     body:
-      'No sync engine, no bespoke protocol, no server of its own to run. If you can reach your API with fetch, you can go offline-first. Zero runtime dependencies — only IndexedDB, Web Locks, BroadcastChannel and crypto.',
+      'No sync engine, no bespoke protocol, no server of its own to run. If you can reach your API with fetch, you can go offline-first. There are zero runtime dependencies: the browser already ships IndexedDB, Web Locks, BroadcastChannel and crypto.',
   },
   {
     numeral: 'III',
     title: 'Server-assigned IDs, kept honest',
     body:
-      'Placeholder refs are tracked across relations, reloads and retries until the server hands back real IDs. Dependent operations are ordered for you; when something fails, the fallout gathers into one coherent conflict group your app can present — retry or discard.',
+      'Placeholder refs stand in for IDs your server has not assigned yet, across relations, reloads and retries. Operations that depend on one wait their turn automatically. If the create is rejected, everything that depended on it rolls back with it and shows up as a single group of conflicts to retry or discard.',
   },
   {
     numeral: 'IV',
     title: 'Safe across every tab',
     body:
-      'Open tabs elect a leader through Web Locks, so an action is never submitted twice. Writes are pushed to your API in order and exactly once — surviving reloads, flaky networks and closed laptops.',
+      'Open tabs elect a leader through Web Locks, so an action is never submitted twice. Writes reach your API in order and exactly once, even if the tab was closed halfway through.',
   },
 ]
 </script>
@@ -82,7 +82,7 @@ const features = [
         ></div>
 
         <div class="relative mx-auto max-w-6xl px-5 sm:px-8 pt-16 pb-14 lg:pt-24 lg:pb-20">
-          <div class="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-14 items-center">
+          <div class="grid xl:grid-cols-2 gap-12 xl:gap-10 items-center">
             <!-- Left: pitch -->
             <div class="min-w-0">
               <p class="rise font-mono text-xs tracking-[0.35em] uppercase text-gold" style="animation-delay: 40ms">
@@ -141,36 +141,42 @@ const features = [
 
             <!-- Right: monk + scripture code -->
             <div class="rise min-w-0" style="animation-delay: 320ms">
-              <div class="flex justify-center lg:justify-end mb-6">
+              <div class="flex justify-center mb-6">
                 <MonkLogo :halo="true" class="h-40 w-40 drop-shadow-[0_18px_28px_rgba(61,40,23,0.28)]" />
               </div>
 
               <figure class="scripture rounded-[var(--radius-card)] p-5 sm:p-6">
-                <figcaption class="flex items-center gap-2 mb-4 pl-9">
+                <figcaption class="flex items-center gap-2 mb-4 pl-8">
                   <span class="h-3 w-3 rounded-full bg-ember/70"></span>
                   <span class="h-3 w-3 rounded-full bg-gold/70"></span>
                   <span class="h-3 w-3 rounded-full bg-sage/60"></span>
                   <span class="ml-2 font-mono text-xs text-ink-mute">store.ts</span>
                 </figcaption>
-                <pre class="pl-9 overflow-x-auto text-ink"><code><span class="tok-kw">import</span> { collection, createStore } <span class="tok-kw">from</span> <span class="tok-str">'@eremitejs/core'</span>
+                <pre class="pl-8 overflow-x-auto text-ink"><code><span class="tok-kw">import</span> { collection, createStore } <span class="tok-kw">from</span> <span class="tok-str">'@eremitejs/core'</span>
 
 <span class="tok-kw">const</span> store = <span class="tok-fn">createStore</span>({
   name: <span class="tok-str">'app'</span>,
   collections: { todos: <span class="tok-fn">collection</span><span class="tok-punc">&lt;</span>Todo<span class="tok-punc">&gt;</span>() },
   mutators: {
-    <span class="tok-fn">addTodo</span> (tx, input: Todo) { tx.todos.<span class="tok-fn">set</span>(input.id, input) }
+    <span class="tok-fn">addTodo</span> (tx, input: Todo) {
+      tx.todos.<span class="tok-fn">set</span>(input.id, input)
+    }
   },
   push: {
-    addTodo: <span class="tok-kw">async</span> ({ input, idempotencyKey }) =&gt;
-      api.<span class="tok-fn">post</span>(<span class="tok-str">'/todos'</span>, input, { idempotencyKey })
+    <span class="tok-kw">async</span> <span class="tok-fn">addTodo</span> ({ input, idempotencyKey }) {
+      <span class="tok-kw">await</span> api.<span class="tok-fn">post</span>(<span class="tok-str">'/todos'</span>, input, { idempotencyKey })
+    }
   }
 })
 
-<span class="tok-com">// visible instantly, queued offline, pushed exactly once</span>
-store.mutate.<span class="tok-fn">addTodo</span>({ id: store.<span class="tok-fn">id</span>(), title: <span class="tok-str">'Ship it'</span>, done: <span class="tok-kw">false</span> })</code></pre>
+<span class="tok-com">// visible now, queued offline, pushed exactly once</span>
+store.mutate.<span class="tok-fn">addTodo</span>({
+  id: store.<span class="tok-fn">id</span>(),
+  title: <span class="tok-str">'Ship it'</span>
+})</code></pre>
               </figure>
 
-              <p class="mt-3 text-center lg:text-right text-sm text-ink-mute font-mono flex items-center gap-2 justify-center lg:justify-end">
+              <p class="mt-3 text-center xl:text-right text-sm text-ink-mute font-mono flex items-center gap-2 justify-center xl:justify-end">
                 <span class="pending-dot inline-block h-2 w-2 rounded-full bg-gold"></span>
                 entities awaiting sync carry <code class="text-walnut">$pending</code>
               </p>
@@ -185,11 +191,11 @@ store.mutate.<span class="tok-fn">addTodo</span>({ id: store.<span class="tok-fn
           <span>The rule of the order</span>
         </div>
         <h2 class="font-display text-4xl sm:text-5xl text-bark tracking-tight max-w-2xl">
-          Optimism you can trust, sync you can forget
+          Four rules, kept strictly
         </h2>
         <p class="mt-4 text-lg text-ink-soft max-w-2xl">
-          Four disciplines keep a self-sufficient app honest — from the durable outbox to the
-          election that governs your open tabs.
+          Eremite never mixes confirmed data with pending changes. Everything else follows
+          from that.
         </p>
 
         <div class="mt-12 grid sm:grid-cols-2 gap-5 lg:gap-6">
@@ -217,12 +223,12 @@ store.mutate.<span class="tok-fn">addTodo</span>({ id: store.<span class="tok-fn
           style="background: linear-gradient(120deg, rgba(255,252,244,0.92), rgba(233,214,182,0.7))"
         >
           <p class="font-display text-2xl sm:text-3xl text-bark leading-snug md:flex-1">
-            No special server. No sync backend. No lock-in.
+            Bring your own backend.
           </p>
           <p class="text-ink-soft leading-relaxed md:flex-1">
-            Eremite.js sits entirely in the browser. It withdraws from the network when it must
-            and reconciles when it can — while your API stays a plain, ordinary REST API. A
-            framework-agnostic core, with official
+            Eremite.js lives entirely in the browser. It withdraws from the network when it
+            has to and catches up when it can, while your API stays a plain REST API. The
+            core is framework-agnostic, with official
             <a :href="vuePkg" class="text-walnut underline decoration-gold/60 underline-offset-4 hover:decoration-gold">Vue 3</a>
             and
             <a :href="reactPkg" class="text-walnut underline decoration-gold/60 underline-offset-4 hover:decoration-gold">React</a>
@@ -253,8 +259,8 @@ store.mutate.<span class="tok-fn">addTodo</span>({ id: store.<span class="tok-fn
           </div>
 
           <figure class="scripture min-w-0 rounded-[var(--radius-card)] p-5 sm:p-6">
-            <figcaption class="pl-9 mb-4 font-mono text-xs text-ink-mute">terminal</figcaption>
-            <pre class="pl-9 overflow-x-auto text-ink"><code><span class="tok-com"># the self-sufficient core</span>
+            <figcaption class="pl-8 mb-4 font-mono text-xs text-ink-mute">terminal</figcaption>
+            <pre class="pl-8 overflow-x-auto text-ink"><code><span class="tok-com"># the self-sufficient core</span>
 <span class="tok-fn">npm</span> install @eremitejs/core
 
 <span class="tok-com"># then your framework binding</span>
