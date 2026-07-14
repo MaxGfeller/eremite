@@ -4,15 +4,13 @@ Mintlify documentation site. Content lives in `.mdx` files; navigation, theme an
 
 ## Local preview
 
+The `mint` CLI is a local dev dependency of this workspace package. From the repo root:
+
 ```bash
-npm i -g mint
-cd docs
-mint dev
+pnpm install
+pnpm docs:dev      # live-reloading preview at http://localhost:3000
+pnpm docs:check    # validate internal links
 ```
-
-Opens a live-reloading preview at `http://localhost:3000`.
-
-`mint broken-links` checks internal links.
 
 ## Deployment
 

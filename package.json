@@ -9,6 +9,8 @@
     "build": "pnpm -r run build",
     "test": "pnpm run build:packages && pnpm -r run test",
     "typecheck": "pnpm run build:packages && pnpm -r run typecheck",
-    "build:packages": "pnpm -r --filter './packages/*' run build"
+    "build:packages": "pnpm -r --filter './packages/*' run build",
+    "docs:dev": "pnpm --filter docs run dev",
+    "docs:check": "pnpm --filter docs run broken-links"
   }
 }
