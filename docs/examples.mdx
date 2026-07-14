@@ -1,0 +1,75 @@
+---
+title: "Example apps"
+description: "Four complete, runnable apps in the repository — the same two apps in Vue and React."
+icon: "flask"
+---
+
+The repository ships four small but complete apps under [`examples/`](https://github.com/MaxGfeller/eremite/tree/main/examples). Each one is a Vite app; run it with:
+
+```bash
+pnpm install
+cd examples/tasks-vue   # or any of the others
+pnpm dev
+```
+
+## Tasks
+
+<CardGroup cols={2}>
+  <Card title="tasks-vue" icon="vuejs" href="https://github.com/MaxGfeller/eremite/tree/main/examples/tasks-vue">
+    A task list against a simulated flaky REST API.
+  </Card>
+  <Card title="tasks-react" icon="react" href="https://github.com/MaxGfeller/eremite/tree/main/examples/tasks-react">
+    The same app, built with the React hooks.
+  </Card>
+</CardGroup>
+
+The tasks apps demonstrate the harder half of Eremite:
+
+- **Server-assigned IDs.** The fake server mints its own numeric IDs, so `addTask` uses [`ctx.ref()`](/concepts/ids-and-refs) and the push handler calls `resolve('task', created.id)`.
+- **A flaky API.** The fake API randomly fails and delays, exercising retries, backoff and offline probing. Custom `retry` settings keep the demo snappy.
+- **Full-replacement pulls.** The `tasks` pull deletes rows the server no longer has before writing the fresh ones — the "server wins for reads" pattern.
+
+```ts examples/tasks-vue/src/store.ts (excerpt)
+mutators: {
+  // The fake server assigns its own IDs, so this uses a ref: the task is
+  // keyed by a placeholder until the push resolves the real ID.
+  addTask (tx, input: { title: string }, ctx) {
+    const id = ctx.ref('task')
+    tx.tasks.set(id, { id, title: input.title, done: false })
+    return { id }
+  }
+},
+push: {
+  async addTask ({ input, resolve, idempotencyKey }) {
+    const created = await api.createTask(input, idempotencyKey)
+    resolve('task', created.id)
+  }
+}
+```
+
+## Hacker News reader
+
+<CardGroup cols={2}>
+  <Card title="hacker-news-vue" icon="vuejs" href="https://github.com/MaxGfeller/eremite/tree/main/examples/hacker-news-vue">
+    An offline-capable HN front page against the real Firebase API.
+  </Card>
+  <Card title="hacker-news-react" icon="react" href="https://github.com/MaxGfeller/eremite/tree/main/examples/hacker-news-react">
+    The same reader with React hooks.
+  </Card>
+</CardGroup>
+
+The Hacker News apps demonstrate the read-heavy, third-party-API side:
+
+- **A real, read-only API you don't control.** The pull fetches the top 30 stories from the official Hacker News Firebase API. No server changes, no proxy.
+- **Stale-while-revalidate for free.** Stories are persisted per record; on the next visit they render instantly from IndexedDB while the pull refreshes in the background.
+- **Local-only mutators.** `markRead` has no push handler, so it commits straight to base state and IndexedDB — read marks work fully offline and never touch a server.
+
+```ts examples/hacker-news-vue/src/store.ts (excerpt)
+mutators: {
+  // Local-only (no push handler): commits straight to IndexedDB and
+  // survives reloads — your read marks work fully offline.
+  markRead (tx, input: { id: string }) {
+    tx.read.set(input.id, { id: input.id })
+  }
+}
+```

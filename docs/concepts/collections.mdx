@@ -1,0 +1,86 @@
+---
+title: "Collections"
+description: "Typed maps of entities keyed by ID — the shape of your local data."
+icon: "table"
+---
+
+A collection is a typed map of entities keyed by ID. You declare them in `createStore`; the phantom type parameter drives type inference everywhere else — mutator drafts, snapshots and pulls all know your entity shapes.
+
+```ts
+import { collection, createStore } from '@eremitejs/core'
+
+interface Project { id: string; name: string; todoCount: number }
+interface Todo { id: string; projectId: string; title: string; done: boolean }
+
+const store = createStore({
+  name: 'app',
+  collections: {
+    projects: collection<Project>(),
+    todos: collection<Todo>()
+  },
+  // ...
+})
+```
+
+Keys are always strings internally; `get`, `set`, `update` and `delete` accept `string | number` and coerce, so numeric server IDs are fine.
+
+## Reading: snapshots
+
+`store.snapshot.<collection>` is an immutable read view over the optimistic state (base + pending ops). It's replaced wholesale on every change, never mutated — which is what makes the framework bindings cheap and tear-free.
+
+```ts
+const todos = store.snapshot.todos
+
+todos.get(id)                        // WithPending<Todo> | undefined
+todos.has(id)                        // boolean
+todos.size                           // number
+todos.keys()                         // string[]
+todos.all()                          // WithPending<Todo>[]
+todos.where(t => !t.done)            // filter with a predicate
+todos.entries()                      // [string, WithPending<Todo>][]
+```
+
+Entities written by a pending op carry a `$pending: true` marker, so the UI can render a saving state:
+
+```ts
+const todo = store.snapshot.todos.get(id)
+if (todo?.$pending) showSpinner()
+```
+
+<Note>
+Model relations the way you would in a normalized cache: store foreign keys (`todo.projectId`) and join in a selector, e.g. `s.todos.where(t => t.projectId === projectId)`. Collections are flat maps by design.
+</Note>
+
+## Writing: drafts
+
+Inside [mutators](/concepts/mutators) and [pull `write` steps](/concepts/pulls) you receive `tx`, a transactional draft spanning *all* collections. Drafts are copy-on-write: the underlying map is only cloned when the first write happens, and entities are cloned before being touched, so base state and previous snapshots are never mutated in place.
+
+```ts
+mutators: {
+  createTodo (tx, input: Todo) {
+    tx.todos.set(input.id, input)                       // insert or replace
+    tx.projects.update(input.projectId, p => {          // edit in place
+      p.todoCount++
+    })
+  },
+  removeTodo (tx, input: { id: string }) {
+    const todo = tx.todos.get(input.id)                 // read (returns a copy)
+    if (todo) tx.projects.update(todo.projectId, p => { p.todoCount-- })
+    tx.todos.delete(input.id)
+  }
+}
+```
+
+Draft methods:
+
+| Method | Behavior |
+|---|---|
+| `get(id)` | Returns a **copy** — mutating it has no effect. Use `update` to change an entity. |
+| `set(id, value)` | Insert or replace. The value is structured-cloned in. |
+| `update(id, fn)` | Clone-then-edit. **A no-op when the entity is absent** — replays run against states a pull may have removed it from, and replays must not throw. |
+| `delete(id)` | Remove the entity. |
+| `has(id)`, `size`, `keys()`, `all()`, `where(fn)` | Reads, same semantics as snapshots (all returning copies). |
+
+<Warning>
+`tx.todos.get(id)!.done = true` silently does nothing — draft reads return defensive copies. Always write through `set` or `update`.
+</Warning>

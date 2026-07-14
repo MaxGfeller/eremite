@@ -1,0 +1,38 @@
+---
+title: "Eremite vs. sync engines"
+description: "PowerSync, ElectricSQL, Zero and friends — database replication as a service, and when you actually need it."
+icon: "server"
+---
+
+A **sync engine** replicates a slice of your server database to each client and keeps it continuously up to date: [PowerSync](https://www.powersync.com) (Postgres/MongoDB/MySQL → SQLite on the client), [ElectricSQL](https://electric-sql.com) (Postgres shape streams into the client), [Zero](https://zerosync.dev) (queryable sync from Rocicorp), Firebase/Firestore's offline mode, and various Automerge/Yjs-based CRDT stacks in the collaborative-document corner.
+
+These are the most powerful tools in the offline space — and the most demanding. Every one of them owns (part of) your backend architecture: a sync service to deploy, replication/CDC configured against your database, permission models expressed as sync rules, and a write path that flows through the engine rather than through your API handlers.
+
+## Side by side
+
+| | Eremite | Sync engines |
+|---|---|---|
+| Backend footprint | none — plain REST | sync service + database integration (CDC/WAL, sync rules) |
+| Data on client | what your pulls fetch | a continuously-replicated partial DB (often SQLite) |
+| Freshness | pull when you choose | ✅ real-time, streamed |
+| Offline writes | ✅ durable outbox → your REST API | ✅ local DB writes, uploaded via the engine |
+| Query power | plain functions over collections | ✅ often full SQL on the client |
+| Authorization | your API's, unchanged | re-expressed as sync/shape rules |
+| Third-party APIs | ✅ | ❌ |
+| Operational cost | zero | a service to run (or pay for) and monitor |
+
+## When a sync engine is the right call
+
+- **Live collaboration** — several users see each other's edits within seconds, cursors and presence, multiplayer boards. Pull-based freshness can't fake this well.
+- **Large offline datasets** — a field-service app that needs 50k records queryable offline with real indexes and SQL wants client-side SQLite fed by replication, not fetch-and-store.
+- **You're designing the backend now** and are happy to commit to the engine's model end to end; the payoff is enormous leverage on exactly these problems.
+
+## When Eremite is the right call
+
+- **The backend is settled** (or belongs to someone else). Sync engines are architecture; Eremite is a library. If replumbing Postgres CDC to make the settings page work offline sounds absurd for your app, it is.
+- **Resilience is the goal, not multiplayer.** Queued writes surviving tunnels, reloads and retries — with your REST API's existing validation and authorization untouched — is precisely the outbox problem, and it doesn't need replication to solve.
+- **You want to adopt incrementally.** One store, a couple of mutators and pulls, for the one feature that needs it. No migration, no service, removable in an afternoon.
+
+## A note on CRDT stacks
+
+Automerge, Yjs and friends solve a different problem again: **merging concurrent edits to shared documents** (text, rich structures) without a central arbiter. If your domain is a collaborative document, use them. Eremite's collections are entity maps synced against a server that has the final word — the classic CRUD shape — and it makes no attempt at mergeable data types.

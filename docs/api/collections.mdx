@@ -1,0 +1,76 @@
+---
+title: "Collections"
+description: "collection(), snapshot reads and draft writes."
+icon: "table"
+---
+
+## `collection<T>()`
+
+Declares a typed collection for `createStore`. The type parameter is phantom — nothing exists at runtime — but drives inference for drafts, snapshots and pulls.
+
+```ts
+import { collection } from '@eremitejs/core'
+
+interface Todo { id: string; title: string; done: boolean }
+
+collections: {
+  todos: collection<Todo>()
+}
+```
+
+Keys are strings internally; every method below accepts `string | number` and coerces.
+
+## `CollectionSnapshot<T>`
+
+The immutable read view at `store.snapshot.<collection>`. Entities may carry `$pending: true` when a pending op wrote them.
+
+| Member | Returns | Notes |
+|---|---|---|
+| `get(id)` | `WithPending<T> \| undefined` | |
+| `has(id)` | `boolean` | |
+| `size` | `number` | getter |
+| `keys()` | `string[]` | |
+| `all()` | `WithPending<T>[]` | insertion order |
+| `where(predicate)` | `WithPending<T>[]` | `predicate(entity, id)` |
+| `entries()` | `[string, WithPending<T>][]` | |
+
+Snapshots are plain values: hold them, diff them, pass them around. A new snapshot object replaces the old one on every store change — reference equality tells you whether anything changed.
+
+## `DraftCollection<T>`
+
+The transactional write view at `tx.<collection>` inside [mutators](/concepts/mutators) and [pull writes](/concepts/pulls). Copy-on-write: the base map is cloned lazily on first write, entities are cloned before edits — base state and existing snapshots are never mutated in place.
+
+### Reads
+
+| Member | Returns | Notes |
+|---|---|---|
+| `get(id)` | `T \| undefined` | returns a **copy** — mutating it has no effect |
+| `has(id)` | `boolean` | |
+| `size` | `number` | getter |
+| `keys()` | `string[]` | |
+| `all()` | `T[]` | copies |
+| `where(predicate)` | `T[]` | copies |
+
+### Writes
+
+<ResponseField name="set(id, value)">
+  Insert or replace. The value is structured-cloned into the draft, so later mutation of the passed object can't leak in.
+</ResponseField>
+
+<ResponseField name="update(id, updater)">
+  Clone-then-edit: the updater receives a fresh copy and mutates it freely.
+
+  **A no-op when the entity does not exist.** This is deliberate — mutations replay against states the entity may have vanished from (e.g. after a pull), and replays must not throw.
+
+  ```ts
+  tx.todos.update(input.id, t => { t.done = !t.done })
+  ```
+</ResponseField>
+
+<ResponseField name="delete(id)">
+  Remove the entity. A no-op when absent.
+</ResponseField>
+
+<Warning>
+Because `get` returns a defensive copy, `tx.todos.get(id)!.done = true` silently does nothing. Always write through `set` or `update`.
+</Warning>

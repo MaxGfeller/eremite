@@ -1,0 +1,81 @@
+---
+title: "createStore"
+description: "The store factory and its full configuration."
+icon: "cube"
+---
+
+```ts
+import { collection, createStore } from '@eremitejs/core'
+
+const store = createStore({
+  name, version?, storage?, collections, mutators,
+  push?, pulls?, retry?, onPushError?, multiTab?, onVersionChange?
+})
+```
+
+Everything is fully typed: `store.mutate`, mutator `tx` drafts and snapshot collections all derive their types from your `collections` and `mutators` config — no code generation, no manual type registration.
+
+## Configuration
+
+<ParamField path="name" type="string" required>
+  Identifies the store. Namespaces the IndexedDB database (`eremite:<name>`), the cross-tab locks and the broadcast channel. Two stores with different names are fully independent.
+</ParamField>
+
+<ParamField path="version" type="number" default="1">
+  Persisted-schema version. When the stored version differs, cached base state is dropped (the outbox is kept) unless `onVersionChange` handles it. See [Storage and versioning](/concepts/storage#versioning).
+</ParamField>
+
+<ParamField path="storage" type="StorageAdapter | null">
+  Storage adapter. Defaults to IndexedDB in the browser and an in-memory adapter elsewhere. Pass `null` to disable persistence entirely. See [Storage](/api/storage).
+</ParamField>
+
+<ParamField path="collections" type="Record<string, CollectionDef>" required>
+  The typed collections, declared with `collection<T>()`:
+
+  ```ts
+  collections: {
+    projects: collection<Project>(),
+    todos: collection<Todo>()
+  }
+  ```
+</ParamField>
+
+<ParamField path="mutators" type="Record<string, (tx, input, ctx) => any>" required>
+  Named local writes: pure, synchronous functions over the transactional draft `tx`, receiving `(tx, input, ctx)` where `ctx` is `{ ref(label), phase }`. See [Mutators](/concepts/mutators).
+</ParamField>
+
+<ParamField path="push" type="{ [mutator]?: (ctx) => Promise<void> }">
+  The network effect per mutator, receiving `{ input, op, idempotencyKey, resolve }`. Omitting a mutator makes it local-only: it commits to base state as soon as the queue reaches it. See [Push handlers](/concepts/push).
+</ParamField>
+
+<ParamField path="pulls" type="Record<string, { fetch, write }>">
+  Named server reads. `fetch(args)` returns a promise of server data; `write(tx, result, args)` lands it in base state synchronously and atomically. See [Pulls](/concepts/pulls).
+</ParamField>
+
+<ParamField path="retry" type="RetryConfig">
+  Backoff tuning for retryable push failures:
+
+  | Field | Default | Meaning |
+  |---|---|---|
+  | `maxAttempts` | `5` | attempts before a retryable failure becomes a conflict |
+  | `baseDelayMs` | `1000` | first backoff delay |
+  | `maxDelayMs` | `30000` | backoff ceiling |
+
+  The delay doubles per attempt: `baseDelayMs · 2^(attempt-1)`, capped at `maxDelayMs`.
+</ParamField>
+
+<ParamField path="onPushError" type="(error, { op, attempt }) => 'retry' | 'drop' | 'offline' | undefined">
+  Classify a push error. Return `undefined` to fall through to the default policy: network errors → `offline`, HTTP 408/425/429/5xx → `retry`, other 4xx → `drop`, unknown errors → `retry`. See [Failure classification](/concepts/push#failure-classification).
+</ParamField>
+
+<ParamField path="multiTab" type="boolean">
+  Coordinate push leadership across tabs. Defaults to `true` whenever the Web Locks API is available. With `false`, this instance always considers itself leader. See [Multi-tab](/concepts/multi-tab).
+</ParamField>
+
+<ParamField path="onVersionChange" type="(from: number | null, to: number, storage: StorageAdapter) => Promise<void> | void">
+  Custom migration, called before hydration when the persisted version differs. Without a handler, base state is dropped and the outbox kept. `from` is `null` on a fresh install. See [Custom migrations](/concepts/storage#custom-migrations).
+</ParamField>
+
+## Returns
+
+A [`Store`](/api/store) instance. Construction is synchronous; `await store.ready` before relying on persisted state.

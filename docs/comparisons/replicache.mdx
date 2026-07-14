@@ -1,0 +1,43 @@
+---
+title: "Eremite vs. Replicache"
+description: "The same mutator idea — with and without a custom server protocol."
+icon: "rotate"
+---
+
+[Replicache](https://replicache.dev) pioneered the model Eremite's write path is built on: named mutators, optimistic execution, a client-side queue, server-authoritative rebase. If you've used Replicache, Eremite's mutators will feel immediately familiar. The difference is in what each asks of your server — and what you get for it.
+
+## The core difference
+
+**Replicache is a sync protocol.** Your server must implement a Replicache-specific `push` endpoint (apply mutations transactionally, track mutation IDs per client), a `pull` endpoint (compute a delta from a cookie, return a patch), and ideally a "poke" channel (e.g. websockets/SSE) to tell clients when to pull. In exchange, clients get server-authoritative rebase: your mutators re-run on the server, the client converges to the server's result, and everyone sees consistent, incrementally-synced state in near real time.
+
+**Eremite is client-side only.** Your server keeps its ordinary REST API. Push handlers are just `fetch` calls you write; pulls are just GET requests you write. In exchange for that simplicity, you give up server-side rebase and real-time delta sync — the server's response is final, and freshness is whenever you pull.
+
+## Side by side
+
+| | Eremite | Replicache |
+|---|---|---|
+| Server requirements | none — any REST API | `push` + `pull` endpoints, per-client mutation tracking, poke channel |
+| Third-party APIs | ✅ works directly | ❌ needs your own sync server in front |
+| Write model | mutators + durable outbox | mutators + durable queue |
+| Conflict handling | rollback + surface to UI | server re-runs mutators (rebase) |
+| Real-time updates | ❌ pull when you choose | ✅ poke → pull deltas |
+| Incremental sync | ❌ pulls fetch what you ask for | ✅ cookie/diff protocol |
+| Multi-tab | ✅ leader election | ✅ |
+| Server-assigned IDs | ✅ refs with dependency tracking | client-generated IDs expected |
+| Dependencies / footprint | zero runtime deps | client library + your sync server |
+
+## When to choose Replicache (or Zero)
+
+- Multiple users edit **shared state concurrently** and need to see each other's changes live — project boards, collaborative documents, multiplayer anything.
+- You want **server-authoritative conflict resolution**: mutators re-run against the latest state on the server, so "increment counter" merges correctly instead of last-write-wins.
+- You're starting fresh and are willing to build the backend around a sync protocol. Also look at [Zero](https://zerosync.dev), Rocicorp's successor project, which moves the sync model into a queryable engine.
+
+## When to choose Eremite
+
+- The API **already exists** — yours, a customer's, or a third party's — and changing it isn't on the table.
+- Your offline needs are **resilience, not multiplayer**: queued writes must survive tunnels and reloads, but two users rarely fight over the same row.
+- You want the **smallest possible footprint**: no sync server to operate, no protocol to implement, zero runtime dependencies on the client.
+
+## Migration notes
+
+The mutator mental model transfers almost 1:1 in both directions. Replicache mutators (`tx.set`, pure, replayable) map directly onto Eremite mutators; the main porting work is replacing the push/pull protocol endpoints with per-mutator `fetch` handlers (Eremite) or implementing the protocol (Replicache).

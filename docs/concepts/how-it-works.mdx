@@ -1,0 +1,77 @@
+---
+title: "How it works"
+description: "Base state, the outbox, and the rebase loop — Eremite's whole mental model."
+icon: "gears"
+---
+
+Everything in Eremite follows from one invariant:
+
+> **The visible state is always derived: base state + pending ops, replayed in order.**
+
+Nothing is ever patched in place, which is why rollback, reordering, conflict handling and multi-tab merging all fall out naturally instead of being special cases.
+
+## The three pieces
+
+### Base state
+
+Base state is what the server has confirmed. It only changes in two ways:
+
+- a **pull** writes fetched data into it, and
+- a **committed op** applies its mutation to it after the push succeeded.
+
+Base state never contains optimistic changes or unresolved [refs](/concepts/ids-and-refs). It is persisted per record (in IndexedDB by default) and hydrated on startup, so cached reads render instantly on the next visit.
+
+### The outbox
+
+Every call to `store.mutate.<name>(input)` appends an **op** — the mutator's name plus its input — to a persistent queue. Ops survive page reloads and are pushed to your API strictly in order. Each op carries a unique ID that doubles as an idempotency key, so a retry after an ambiguous failure can't create a duplicate on the server.
+
+### The rebase
+
+Whenever anything changes — an op is enqueued, a pull lands, an op commits or is dropped — Eremite rebuilds the visible snapshot by replaying every pending op on top of base state. Mutators are pure and synchronous, so this replay is cheap and deterministic. Entities touched by a pending op are marked with `$pending: true` so the UI can show a saving indicator.
+
+## The life of a write
+
+```text
+store.mutate.addTodo(input)
+        │
+        ▼
+ 1. op appended to the outbox (persisted)
+ 2. rebase → snapshot updates instantly, entity marked $pending
+        │
+        ▼          (offline? the op just waits — across reloads)
+ 3. push handler runs the network call, with idempotency key
+        │
+   ┌────┴─────────────┬──────────────────────┐
+   ▼                  ▼                      ▼
+success          retryable failure      rejection (4xx)
+   │                  │                      │
+ 4. mutator        exponential            op dropped,
+    replayed at    backoff, up to         rebase removes its
+    commit into    retry.maxAttempts      effect, surfaced
+    base state                            as a conflict
+```
+
+The `done` promise on the mutation handle settles with the final outcome — `{ status: 'committed' }` or `{ status: 'dropped', reason, message }` — and never rejects.
+
+## The life of a read
+
+Reads take a different path than writes — they are never queued for later replay. A [pull](/concepts/pulls) fetches, then atomically writes into base state; pending ops are rebased on top, so an optimistic edit is never clobbered by a refetch racing it.
+
+## Why "derived, never patched" matters
+
+Consider the failure case that corrupts most hand-rolled optimistic UI: you optimistically increment a counter, the request fails, and you decrement it back — but meanwhile a refetch overwrote the counter, so your decrement corrupts fresh data.
+
+In Eremite this bug cannot exist. The optimistic increment is not a patch; it's a pending op replayed over whatever base state currently is. When the op is dropped, the next rebase simply doesn't include it. When a pull lands mid-flight, the op replays on top of the new data. There is no inverse operation to get wrong.
+
+## Where each concept is documented
+
+<CardGroup cols={3}>
+  <Card title="Collections" href="/concepts/collections" icon="table">Typed maps of entities</Card>
+  <Card title="Mutators" href="/concepts/mutators" icon="pen">Pure local writes</Card>
+  <Card title="Push" href="/concepts/push" icon="paper-plane">Network effects & retries</Card>
+  <Card title="Pulls" href="/concepts/pulls" icon="cloud-arrow-down">Server reads</Card>
+  <Card title="IDs & refs" href="/concepts/ids-and-refs" icon="fingerprint">Client & server IDs</Card>
+  <Card title="Conflicts" href="/concepts/conflicts" icon="triangle-exclamation">When the server says no</Card>
+  <Card title="Storage" href="/concepts/storage" icon="database">Persistence & versioning</Card>
+  <Card title="Multi-tab" href="/concepts/multi-tab" icon="window-restore">Leadership & broadcast</Card>
+</CardGroup>

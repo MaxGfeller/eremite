@@ -1,0 +1,103 @@
+---
+title: "Mutators"
+description: "Pure, synchronous, replayable functions that describe every local change."
+icon: "pen"
+---
+
+Every write in Eremite is a named **mutator**: a pure, synchronous function that edits a transactional draft over all collections. Mutators are the *local* half of a write; the matching [push handler](/concepts/push) is the network half.
+
+```ts
+const store = createStore({
+  // ...
+  mutators: {
+    createTodo (tx, input: Todo) {
+      tx.todos.set(input.id, input)
+      tx.projects.update(input.projectId, p => { p.todoCount++ })
+    },
+    toggleTodo (tx, input: { id: string }) {
+      tx.todos.update(input.id, t => { t.done = !t.done })
+    }
+  }
+})
+```
+
+Calling one is type-safe and returns a handle:
+
+```ts
+const { result, done, opId } = store.mutate.createTodo({ id: store.id(), ... })
+
+result            // the mutator's return value from its first (optimistic) run
+opId              // the op's ID (also its idempotency key)
+await done        // { status: 'committed' } | { status: 'dropped', reason, message }
+```
+
+`done` never rejects — inspect the outcome instead. If the mutator itself throws on its first run, `store.mutate.<name>()` throws synchronously and nothing is enqueued.
+
+## The rules
+
+A mutator replays many times: once optimistically at enqueue, again on every rebase (any time an op lands, commits or is dropped, or a pull writes), and one final time at commit. That makes four rules non-negotiable:
+
+<AccordionGroup>
+<Accordion title="1. Pure and synchronous">
+No fetches, no timers, no randomness, no reading the clock. IDs come from `store.id()` *outside* the mutator, or `ctx.ref()` *inside* it (which is replay-stable — the ref is minted once, at enqueue time, and merely recalled on later replays).
+
+```ts
+// ❌ different value on every replay
+createTodo (tx, input) {
+  tx.todos.set(crypto.randomUUID(), { ... })
+}
+
+// ✅ ID decided once, passed as input
+const id = store.id()
+store.mutate.createTodo({ id, ... })
+```
+</Accordion>
+<Accordion title="2. Tolerate missing entities">
+`tx.update(id, fn)` is deliberately a no-op when the entity is absent. Replays run against states where a pull may have removed the entity; a mutator that throws on a missing row is dropped as a `replay-failed` conflict.
+</Accordion>
+<Accordion title="3. Inputs are data">
+Inputs are structured-cloned at enqueue time and persisted to storage. Functions, DOM nodes and class instances are rejected with an error. Plain objects, arrays, strings, numbers, dates and the like are all fine.
+</Accordion>
+<Accordion title="4. Cross-collection writes are normal">
+The draft spans all collections, and one mutator run is one atomic mutation. A counter update next to an insert belongs in the same mutator — don't split what should commit together into two ops.
+</Accordion>
+</AccordionGroup>
+
+## The context argument
+
+Mutators receive an optional third argument:
+
+```ts
+mutators: {
+  createInvoice (tx, input: { customer: string }, ctx) {
+    const id = ctx.ref('invoice')     // placeholder for a server-assigned ID
+    tx.invoices.set(id, { id, customer: input.customer })
+    return { id }
+  }
+}
+```
+
+- **`ctx.ref(label)`** — mint (or recall) a placeholder for a server-assigned ID. See [IDs and refs](/concepts/ids-and-refs).
+- **`ctx.phase`** — `'optimistic'` while pending (including every rebase replay), `'commit'` when the mutation enters base state. Rarely needed; useful when an optimistic-only presentation detail shouldn't be persisted.
+
+## Local-only mutators
+
+A mutator with **no push handler** is local-only: it commits to base state (and therefore to IndexedDB) as soon as the queue reaches it, without any network call. Perfect for purely client-side, durable state:
+
+```ts
+mutators: {
+  // No matching entry in `push` — commits straight to IndexedDB.
+  markRead (tx, input: { id: string }) {
+    tx.read.set(input.id, { id: input.id })
+  }
+}
+```
+
+## Return values
+
+Whatever the mutator returns from its first run comes back on the handle as `result`. The common use is returning IDs minted with `ctx.ref()` so callers can build follow-up mutations:
+
+```ts
+const { result } = store.mutate.createInvoice({ customer: 'ACME' })
+store.mutate.addLineItem({ id: store.id(), invoiceId: result.id, text: 'Consulting' })
+```

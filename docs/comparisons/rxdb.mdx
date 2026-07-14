@@ -1,0 +1,40 @@
+---
+title: "Eremite vs. RxDB"
+description: "A full client-side database with replication vs. a thin data layer over your REST API."
+icon: "database"
+---
+
+[RxDB](https://rxdb.info) is a real client-side database: JSON schemas, indexes, a query engine (Mango queries), reactive query subscriptions, encryption, compression, swappable storage engines, and a replication protocol with adapters for CouchDB, GraphQL, Firestore, WebRTC and custom HTTP endpoints. It's a mature, powerful piece of infrastructure.
+
+Eremite is deliberately not a database. It's a thin data layer — collections as typed maps, selection with plain functions, and a write path built around your existing REST endpoints.
+
+## Side by side
+
+| | Eremite | RxDB |
+|---|---|---|
+| What it is | offline-first data layer over REST | client-side database with replication |
+| Queries | plain functions over maps (`where`, `get`) | schema-backed query engine, indexes, reactive queries |
+| Schemas | TypeScript types only | JSON Schema, validated, migrated |
+| Writes to server | per-mutator `fetch` handlers | replication protocol (pull/push streams, checkpoints) |
+| Server requirements | none | a replication-compatible endpoint (or an adapter's backend) |
+| Conflict handling | rollback + surface to UI | revision-based, custom conflict handlers |
+| Real-time | ❌ | ✅ with suitable backend (streams, WebRTC, etc.) |
+| Dataset size | working set you pull | large collections with indexes |
+| Footprint | zero dependencies, a few KB | a database engine; premium plugins for some storages/features |
+| License/cost | MIT | Apache-2.0 core, paid premium plugins |
+
+## When to choose RxDB
+
+- You need **database features on the client**: indexed queries over tens of thousands of rows, schema validation and migrations, reactive queries that update when any underlying row changes.
+- Your backend can speak (or adapt to) a **replication protocol** — you get robust two-way sync, including real-time, with checkpointing and recovery.
+- Multiple client apps share one local dataset and query it in rich ways — RxDB behaves like the local source of truth an app is built *on*.
+
+## When to choose Eremite
+
+- Your source of truth is a **REST API you don't want to wrap** in a replication protocol. Eremite's push handlers and pulls are just the `fetch` calls you'd write anyway.
+- Your local working set is modest (the entities on screen and around them), and `Array.filter`-style selection is honestly all your queries do.
+- You want the write-path guarantees (durable ordered outbox, idempotency, [refs for server IDs](/concepts/ids-and-refs)) without adopting a database engine, schemas and its operational surface.
+
+## The gut check
+
+If you find yourself wanting *indexes* or *reactive Mango queries*, you want RxDB. If you find yourself writing a replication endpoint just to make RxDB talk to a REST API that already exists, you probably wanted Eremite.

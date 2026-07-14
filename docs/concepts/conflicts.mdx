@@ -1,0 +1,88 @@
+---
+title: "Errors and conflicts"
+description: "What happens when the server says no — and how to present it to users."
+icon: "triangle-exclamation"
+---
+
+Not every queued write survives contact with the server. When an op is dropped — rejected by the server, retries exhausted, or orphaned by a failed dependency — its optimistic effect is rolled back (the next rebase simply doesn't include it) and it becomes a **conflict**: a persisted record that the app presents to the user.
+
+This is a deliberate design choice: Eremite never silently discards user input, and never pretends a rejected write succeeded. The data is safe in the conflict record; the *decision* belongs to your UI.
+
+## The conflict record
+
+```ts
+store.conflicts   // Conflict[]
+
+interface Conflict {
+  op: OpRecord            // the dropped op: id, mutator, input, refs, attempts, enqueuedAt
+  reason: 'rejected' | 'push-failed' | 'dependency-failed'
+        | 'unresolved-reference' | 'commit-failed' | 'replay-failed'
+  message?: string        // the error message, when available
+  at: number              // timestamp of the drop
+}
+```
+
+| Reason | Meaning |
+|---|---|
+| `rejected` | The server refused the operation (non-retryable error, e.g. a 422). |
+| `push-failed` | Retries exhausted (`retry.maxAttempts`, default 5). |
+| `dependency-failed` | An operation this one depends on (via a [ref](/concepts/ids-and-refs)) was dropped. |
+| `unresolved-reference` | The input references an ID that can no longer be resolved — the producing operation is gone. |
+| `commit-failed` / `replay-failed` | The mutator itself threw during commit or a rebase replay. Usually a bug in the mutator (see [the rules](/concepts/mutators#the-rules)). |
+
+Conflicts are persisted to storage, so an op rejected while the app was in the background is still there to present after a reload.
+
+## Resolving conflicts
+
+Two verbs, both yours to wire to UI:
+
+```ts
+store.retryConflict(op.id)      // re-enqueue the op (attempts reset to 0)
+store.discardConflict(op.id)    // accept the server's verdict, drop the record
+```
+
+<Note>
+When a whole ref chain failed together, **retry the producer before its dependents** — a dependent re-enqueued alone still references an ID nobody will produce and will be dropped again as `unresolved-reference`.
+</Note>
+
+A minimal conflict UI (Vue; the React version is symmetric):
+
+```vue
+<script setup lang="ts">
+import { useSyncStatus } from '@eremitejs/vue'
+import { store } from './store'
+
+const { conflicts } = useSyncStatus(store)
+</script>
+
+<template>
+  <div v-for="c in conflicts" :key="c.op.id" class="conflict">
+    <p>"{{ c.op.mutator }}" was not saved — {{ c.message ?? c.reason }}</p>
+    <button @click="store.retryConflict(c.op.id)">Try again</button>
+    <button @click="store.discardConflict(c.op.id)">Discard</button>
+  </div>
+</template>
+```
+
+## Observing a single mutation
+
+You don't have to watch the global conflict list — every mutation handle reports its own outcome. `done` resolves (it never rejects) once the op commits or is dropped:
+
+```ts
+const { done } = store.mutate.createInvoice({ customer: 'ACME' })
+
+const outcome = await done
+if (outcome.status === 'dropped') {
+  toast.error(`Invoice was not saved: ${outcome.message ?? outcome.reason}`)
+}
+```
+
+<Warning>
+Don't `await done` before updating the UI — that would forfeit the optimistic update. Fire the mutation, render from the snapshot, and use `done` (or the conflicts list) for failure feedback.
+</Warning>
+
+## What Eremite does *not* do
+
+Eremite detects and surfaces conflicts; it does not merge them. There is no CRDT, no operational transform, no server-side rebase — because Eremite works against your existing REST API, the server's answer is final. If two devices edit the same field offline, the last successful write wins on the server, and a pull brings every client to the server's truth.
+
+If your domain needs field-level merging or real-time collaborative editing, that requires server cooperation by nature — see the [comparisons](/comparisons/overview) for tools in that space.

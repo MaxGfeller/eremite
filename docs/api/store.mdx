@@ -1,0 +1,113 @@
+---
+title: "Store"
+description: "Every property and method on a store instance."
+icon: "box"
+---
+
+```ts
+const store = createStore({ ... })
+```
+
+## Lifecycle
+
+### `store.ready`
+
+`Promise<void>` — resolves once persisted state (base records, outbox, ID map, conflicts) has been hydrated from storage. The store is usable before then (mutations enqueue fine); waiting matters when you want cached data on first render.
+
+### `store.close()`
+
+Releases leadership, closes the broadcast channel, clears timers and listeners. The store must not be used afterwards; `mutate` throws once closed. Mostly relevant in tests and HMR teardown.
+
+## Writing
+
+### `store.id()`
+
+Returns a new client-generated **UUIDv7** — time-ordered and valid as a permanent primary key. See [IDs and refs](/concepts/ids-and-refs).
+
+### `store.mutate.<name>(input)`
+
+Enqueues the named mutator with `input` and applies it optimistically. Returns a `MutationHandle`:
+
+```ts
+const { opId, result, done } = store.mutate.createTodo({ id, title, done: false })
+```
+
+| Field | Type | Meaning |
+|---|---|---|
+| `opId` | `string` | the op's ID; equals its idempotency key |
+| `result` | `R` | return value of the mutator's first (optimistic) run |
+| `done` | `Promise<MutationOutcome>` | settles when the op is committed or dropped; **never rejects** |
+
+```ts
+type MutationOutcome =
+  | { status: 'committed' }
+  | { status: 'dropped', reason: Conflict['reason'], message?: string }
+```
+
+Throws synchronously if the input isn't structured-cloneable or the mutator throws on its first run (in which case nothing is enqueued).
+
+### `store.flush()`
+
+`Promise<void>` — kicks the push loop and resolves when it settles: outbox drained, gone offline, or waiting on backoff. Useful in tests and before critical navigation. It does not force retries past backoff timers.
+
+## Reading
+
+### `store.snapshot`
+
+The optimistic view: base state + pending ops, as immutable [`CollectionSnapshot`](/api/collections)s per collection. Replaced (never mutated) on every change; entities written by pending ops carry `$pending: true`.
+
+```ts
+store.snapshot.todos.get(id)
+store.snapshot.todos.where(t => !t.done)
+```
+
+### `store.pull(name, args?)`
+
+Runs the named [pull](/concepts/pulls): `fetch(args)`, then atomically write into base state and rebase pending ops on top. Resolves with `fetch`'s result; rejects if `fetch` throws. A successful pull also flips an offline store back online.
+
+### `store.subscribe(listener)`
+
+Registers a change listener, called after every snapshot/status/conflict change. Returns an unsubscribe function. This plus `snapshot` is the entire [binding contract](/frameworks/custom).
+
+## Sync state
+
+### `store.status`
+
+```ts
+{ online: boolean, syncing: boolean, pendingOps: number }
+```
+
+`online` reflects *verified* backend reachability: it flips false on network-type push failures and only flips back once a push or pull actually succeeds (or `navigator` fires `online` / `setOnline(true)` is called — after which the next real request is the proof).
+
+### `store.setOnline(online)`
+
+Manual connectivity override. `setOnline(true)` resets failure counters and kicks the push loop; `setOnline(false)` pauses pushing. Browser `online`/`offline` events call this automatically.
+
+### `store.pendingOps`
+
+`OpRecord[]` — copies of the queued ops, for debugging or "N unsaved changes" UI:
+
+```ts
+interface OpRecord {
+  id: string
+  mutator: string
+  input: unknown
+  refs: Record<string, string>
+  attempts: number
+  enqueuedAt: number
+}
+```
+
+## Conflicts
+
+### `store.conflicts`
+
+`Conflict[]` — dropped ops awaiting a decision. See [Errors and conflicts](/concepts/conflicts) for the record shape and reasons.
+
+### `store.retryConflict(opId)`
+
+Removes the conflict and re-enqueues its op with `attempts` reset. Retry a producer before its dependents.
+
+### `store.discardConflict(opId)`
+
+Removes the conflict record, accepting the server's verdict. The op's optimistic effect is already rolled back at this point.

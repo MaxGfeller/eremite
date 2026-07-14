@@ -1,0 +1,68 @@
+---
+title: "Storage adapters"
+description: "idbStorage, memoryStorage, defaultStorage and the StorageAdapter interface."
+icon: "database"
+---
+
+See [Storage and versioning](/concepts/storage) for the concepts; this page is the reference.
+
+## `StorageAdapter`
+
+```ts
+interface StorageAdapter {
+  get: (key: string) => Promise<unknown>
+  set: (key: string, value: unknown) => Promise<void>
+  delete: (key: string) => Promise<void>
+  /** All entries whose key starts with `prefix`. */
+  entries: (prefix: string) => Promise<Array<[string, unknown]>>
+  clear: () => Promise<void>
+}
+```
+
+Values are structured-clone-compatible plain data. Keys the store uses:
+
+| Key | Content |
+|---|---|
+| `b:<collection>:<id>` | one base-state record |
+| `ops` | the outbox (array of `OpRecord`) |
+| `idmap` | ref → real-ID map |
+| `conflicts` | persisted `Conflict[]` |
+| `meta` | `{ version }` |
+
+`entries('b:')` (and `entries('b:<collection>:')`) power hydration and migrations — keep prefix scans efficient for large datasets.
+
+## `idbStorage(dbName)`
+
+The default browser adapter: raw IndexedDB, one object store, no dependencies or fallbacks. Used automatically as `idbStorage('eremite:<store name>')`; call it directly only to customize the database name.
+
+```ts
+import { idbStorage } from '@eremitejs/core'
+
+createStore({ name: 'app', storage: idbStorage('my-db'), ... })
+```
+
+## `memoryStorage()`
+
+An in-memory adapter with identical semantics (including structured-clone isolation of stored values). The default outside the browser; explicitly useful in tests:
+
+```ts
+import { memoryStorage } from '@eremitejs/core'
+
+const store = createStore({ name: 'test', storage: memoryStorage(), ... })
+```
+
+<Tip>
+To simulate a "reload" in tests, keep the adapter in a variable, `close()` the first store, and create a second store with the same adapter — it hydrates the persisted outbox and base state exactly like a browser refresh would.
+</Tip>
+
+## `defaultStorage(name)`
+
+What the store calls when you pass no `storage`: `idbStorage('eremite:<name>')` when `indexedDB` exists, otherwise `memoryStorage()`. Exported for adapter authors who want the same fallback behavior.
+
+## Disabling persistence
+
+```ts
+createStore({ name: 'app', storage: null, ... })
+```
+
+Fully in-memory: still optimistic and ordered, but nothing survives a reload.

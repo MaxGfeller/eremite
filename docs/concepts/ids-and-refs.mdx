@@ -1,0 +1,72 @@
+---
+title: "IDs and refs"
+description: "Client-generated UUIDv7 as the happy path, refs for backends that mint their own IDs."
+icon: "fingerprint"
+---
+
+Offline creation has one classic hard problem: the entity needs an ID before the server has seen it, and other entities may need to reference that ID. Eremite offers two answers.
+
+## The happy path: client-generated IDs
+
+`store.id()` returns a **UUIDv7** — time-ordered (so IDs sort by creation time, index-friendly in most databases), collision-safe, and valid as a permanent primary key. If your backend accepts client-supplied IDs, **the temporary-ID problem does not exist**: relations reference the final ID from the first millisecond, offline or not.
+
+```ts
+const projectId = store.id()
+store.mutate.createProject({ id: projectId, name: 'Relaunch', todoCount: 0 })
+store.mutate.createTodo({ id: store.id(), projectId, title: 'First task', done: false })
+```
+
+<Tip>
+If you control your backend, accept client-supplied UUIDs on create endpoints. It's a small change that removes an entire class of client complexity — not just in Eremite.
+</Tip>
+
+## Server-assigned IDs: refs
+
+Many backends insist on minting their own IDs (auto-increment integers, database-generated keys). For those, a mutator can declare a **ref** — a stable placeholder that the push handler later resolves to the real ID:
+
+```ts
+mutators: {
+  createInvoice (tx, input: { customer: string }, ctx) {
+    const id = ctx.ref('invoice')          // minted once, at enqueue time
+    tx.invoices.set(id, { id, customer: input.customer })
+    return { id }
+  },
+  addLineItem (tx, input: { id: string; invoiceId: string; text: string }) {
+    tx.lineItems.set(input.id, input)
+  }
+},
+push: {
+  async createInvoice ({ input, resolve, idempotencyKey }) {
+    const created = await api.post('/invoices', input, { idempotencyKey })
+    resolve('invoice', created.id)         // persisted; everything downstream is rewritten
+  },
+  async addLineItem ({ input }) {
+    await api.post(`/invoices/${input.invoiceId}/items`, input)   // input.invoiceId is the REAL id here
+  }
+}
+```
+
+Using it — note that `addLineItem` can reference the invoice immediately, even though the server hasn't assigned its ID yet:
+
+```ts
+const { result } = store.mutate.createInvoice({ customer: 'ACME' })
+store.mutate.addLineItem({ id: store.id(), invoiceId: result.id, text: 'Consulting' })
+```
+
+## What Eremite guarantees about refs
+
+- **Automatic ordering.** An op whose input contains an unresolved ref implicitly waits for the op that produces it — no manual dependency wiring.
+- **Deep substitution.** Once resolved, the real ID replaces the ref everywhere in later ops' inputs — nested values *and* object keys — before their push handlers run. Your handlers only ever see real IDs.
+- **Persistence.** Refs and the ref→ID map survive reloads; a chain interrupted halfway (invoice created, line item still queued, browser closed) continues correctly in the next session.
+- **Grouped failure.** If the producing op is rejected, every dependent op is dropped with it — transitively — and surfaced as one coherent group of [conflicts](/concepts/conflicts) (`dependency-failed`).
+- **Self-healing state.** Derived state is recomputed from base + ops, so an entity keyed by a ref automatically re-keys to the real ID at commit; base state never contains a ref.
+
+<Warning>
+The one thing refs cannot hide: an entity's **key changes** from the ref to the real ID when the op commits. A component holding the old key will find `get(oldKey)` empty after commit. Query by value (`where`) where practical, and prefer client-generated IDs wherever your backend allows them.
+</Warning>
+
+## Rules of thumb
+
+- Call `ctx.ref(label)` with a label that's unique **within that mutator** (`'invoice'`, `'task'`). The same label in different ops mints different refs.
+- Always call `resolve(label, realId)` in the push handler of a ref-minting mutator. If a push succeeds without resolving, Eremite logs a warning — later ops referencing that entity would be dropped as `unresolved-reference`.
+- Refs are plain strings (prefixed `erm.ref:`), so they can be map keys, appear in nested input, and be persisted as-is.

@@ -1,0 +1,148 @@
+---
+title: "Other frameworks"
+description: "The core is plain snapshot + subscribe — here's how to bind it to anything, with a full Svelte example."
+icon: "puzzle-piece"
+---
+
+The official Vue and React packages are thin: each is about a hundred lines over the same four store primitives. If your framework isn't covered, you can write an equivalent binding in an afternoon.
+
+## The contract
+
+Everything a binding needs from the store:
+
+```ts
+store.snapshot     // immutable; replaced (not mutated) on every change
+store.status       // { online, syncing, pendingOps }
+store.conflicts    // Conflict[]
+store.subscribe(listener)   // called after every change; returns unsubscribe
+store.pull(name, args?)     // run a server read; resolves/rejects with fetch
+```
+
+Because the snapshot is an immutable value swapped on change, the binding pattern is always the same:
+
+1. **Subscribe** to the store and translate each notification into your framework's "something changed" signal.
+2. **Read** `store.snapshot` / `store.status` / `store.conflicts` lazily inside your framework's reactive computation.
+3. **Unsubscribe** when the component/scope is destroyed.
+
+Mutations need no binding at all — `store.mutate.<name>(input)` is just a method call, valid anywhere.
+
+## Example: Svelte 5
+
+A complete binding using runes (`$state` + `$effect`), mirroring the official APIs:
+
+```ts eremite-svelte.ts
+import type { Conflict, SyncStatus } from '@eremitejs/core'
+
+interface SubscribableStore {
+  snapshot: unknown
+  status: SyncStatus
+  conflicts: Conflict[]
+  subscribe: (listener: () => void) => () => void
+  pull: (name: string, args?: unknown) => Promise<unknown>
+}
+
+/** Bump a version on every store change; clean up with the component. */
+function useStoreVersion (store: SubscribableStore): { readonly value: number } {
+  let version = $state(0)
+  $effect(() => store.subscribe(() => { version++ }))
+  return { get value () { return version } }
+}
+
+export function useQuery<S extends SubscribableStore, R> (
+  store: S,
+  selector: (snapshot: S['snapshot']) => R
+): { readonly value: R } {
+  const version = useStoreVersion(store)
+  const result = $derived.by(() => {
+    void version.value
+    return selector(store.snapshot as S['snapshot'])
+  })
+  return { get value () { return result } }
+}
+
+export function usePull (store: SubscribableStore, name: string, args?: () => unknown) {
+  let loading = $state(false)
+  let error = $state<unknown>(null)
+
+  const refetch = async () => {
+    loading = true
+    error = null
+    try { await store.pull(name, args?.()) }
+    catch (err) { error = err }
+    finally { loading = false }
+  }
+
+  $effect(() => {
+    args?.()          // track the args; re-pull when they change
+    void refetch()
+  })
+
+  return { get loading () { return loading }, get error () { return error }, refetch }
+}
+
+export function useSyncStatus (store: SubscribableStore) {
+  const version = useStoreVersion(store)
+  const read = <T>(get: () => T) => $derived.by(() => { void version.value; return get() })
+  const online = read(() => store.status.online)
+  const pendingOps = read(() => store.status.pendingOps)
+  const conflicts = read(() => store.conflicts)
+  return {
+    get online () { return online },
+    get pendingOps () { return pendingOps },
+    get conflicts () { return conflicts }
+  }
+}
+```
+
+Used in a component:
+
+```svelte
+<script lang="ts">
+  import { useQuery, usePull, useSyncStatus } from './eremite-svelte'
+  import { store } from './store'
+
+  usePull(store, 'todos')
+  const todos = useQuery(store, s => s.todos.where(t => !t.done))
+  const sync = useSyncStatus(store)
+
+  function add (title: string) {
+    store.mutate.addTodo({ id: store.id(), title, done: false })
+  }
+</script>
+
+{#each todos.value as todo (todo.id)}
+  <TodoItem {todo} saving={todo.$pending} />
+{/each}
+{#if !sync.online}<OfflineBanner queued={sync.pendingOps} />{/if}
+```
+
+## Example: no framework at all
+
+The subscribe/snapshot pair works fine with hand-rolled rendering:
+
+```ts
+import { store } from './store'
+
+await store.ready
+
+function render () {
+  const todos = store.snapshot.todos.all()
+  const { online, pendingOps } = store.status
+  list.innerHTML = todos
+    .map(t => `<li class="${t.$pending ? 'saving' : ''}">${t.title}</li>`)
+    .join('')
+  banner.hidden = online
+  badge.textContent = String(pendingOps)
+}
+
+store.subscribe(render)
+render()
+void store.pull('todos')
+```
+
+## Tips for binding authors
+
+- **Don't diff snapshots** — the store already notifies only on real changes; just re-run selectors. Selection is `O(selector)`, and snapshot reads are cheap.
+- **Read lazily.** Capture the *store*, not the snapshot, and dereference `store.snapshot` inside the reactive computation — the getter always returns the latest value.
+- **Type against a structural interface** (as above) rather than the full `Store` generic; your binding stays independent of the app's collection/mutator types while `useQuery` still infers the snapshot type from the concrete store.
+- Look at the [Vue](https://github.com/MaxGfeller/eremite/blob/main/packages/vue/src/index.ts) and [React](https://github.com/MaxGfeller/eremite/blob/main/packages/react/src/index.ts) sources — ~100 lines each — before writing your own.

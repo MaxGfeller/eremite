@@ -1,0 +1,53 @@
+---
+title: "Eremite vs. TanStack Query"
+description: "Server-state caching vs. an offline-first data layer — different jobs that overlap on reads."
+icon: "layer-group"
+---
+
+[TanStack Query](https://tanstack.com/query) is the default answer for server state in React (and increasingly Vue): fetch, cache, dedupe, refetch on focus, invalidate. It's excellent at that job, and if your app is online-mostly with occasional blips, it's probably all you need.
+
+The comparison gets interesting when writes need to survive being offline. That's where the two tools' designs diverge fundamentally.
+
+## Reads: similar surface, different defaults
+
+Both give you "render cached data instantly, refresh in the background":
+
+- **TanStack Query** caches query results in memory, keyed by query key, with staleness/GC policies and automatic refetching (focus, reconnect, interval). Persisting the cache across reloads is opt-in via a persister.
+- **Eremite** pulls write into a normalized local store (collections of entities) that is **persisted per record by default** and hydrated on startup. There are no staleness timers — you decide when to pull.
+
+TanStack Query is more automated (refetch policies, request dedup, infinite queries, pagination helpers). Eremite is more structural: data lands in typed collections that reads *and* optimistic writes share, rather than in per-query result blobs — so an entity updated by a mutation is instantly consistent across every view that selects it, without cache-key invalidation choreography.
+
+## Writes: the actual divide
+
+With TanStack Query, an optimistic update is a recipe you hand-write per mutation: cancel in-flight queries, snapshot the cache, patch it in `onMutate`, restore the snapshot in `onError`, invalidate in `onSettled` — for every affected query key. It works, but the failure modes (a refetch racing your patch, a rollback restoring stale data, a missed query key) are yours to manage, and they multiply with every view of the same data.
+
+Eremite inverts this. You never patch caches or write rollback code: the visible state is always *base state + pending ops replayed*, so applying, rolling back and reordering optimistic changes are the same operation. One mutator updates every view of the entity, race-free [by construction](/concepts/how-it-works).
+
+Offline durability differs the same way:
+
+| | Eremite | TanStack Query |
+|---|---|---|
+| Optimistic updates | automatic (derived state) | manual per mutation (`onMutate`/`onError`) |
+| Writes queued offline | ✅ durable outbox in IndexedDB, by default | ⚠️ mutations pause offline, but are lost on reload unless you add a persister + `resumePausedMutations` and make mutation functions serializable |
+| Ordering | ✅ strict enqueue order, plus ref dependencies | ⚠️ paused mutations resume, but there's no cross-mutation dependency or ID tracking |
+| Exactly-once | ✅ idempotency key per op | ❌ yours to build |
+| Server-assigned IDs across relations | ✅ [refs](/concepts/ids-and-refs) | ❌ yours to build |
+| Refetch automation (focus, interval, dedup) | ❌ you trigger pulls | ✅ excellent |
+| Pagination/infinite query helpers | ❌ | ✅ |
+| Ecosystem | young | huge |
+
+## When to choose TanStack Query
+
+- Your app is **online-mostly** and the offline story is "show cached data, disable the save button".
+- Your read patterns are query-shaped: pagination, infinite scroll, search results, per-request server filtering — TanStack Query's cache-per-query-key model and helpers fit these perfectly.
+- You want maximum ecosystem, docs and hiring familiarity.
+
+## When to choose Eremite
+
+- Users **create and edit data offline** (or on hostile networks), and losing a queued write on reload is unacceptable.
+- The same entities appear in many views, and you're tired of invalidation/optimistic-update choreography.
+- Writes have **structure**: ordering matters, creates feed into follow-up requests, the backend assigns IDs.
+
+## Using both
+
+They coexist fine. A pragmatic split in a larger app: TanStack Query for query-shaped, read-only server state (search, reports, other teams' APIs), Eremite for the entities users own and edit offline. Nothing about either library conflicts with the other.

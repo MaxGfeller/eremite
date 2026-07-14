@@ -1,0 +1,98 @@
+---
+title: "Vue"
+description: "Vue 3 composables: useQuery, usePull and useSyncStatus."
+icon: "vuejs"
+---
+
+```bash
+npm install @eremitejs/core @eremitejs/vue
+```
+
+`@eremitejs/vue` bridges the framework-agnostic core (immutable snapshots + `subscribe`) into Vue's reactivity. Internally it drives updates through a version counter and shallow refs — no deep reactive proxies over your whole store, so updates stay cheap even with large collections.
+
+## A complete component
+
+```vue
+<script setup lang="ts">
+import { useQuery, usePull, useSyncStatus } from '@eremitejs/vue'
+import { store } from '../store' // your createStore() instance
+
+const props = defineProps<{ projectId: string }>()
+
+// Reactive selection over the optimistic snapshot
+const todos = useQuery(store, s => s.todos.where(t => t.projectId === props.projectId))
+
+// Server read; re-runs when the args getter's value changes
+const { loading, error, refetch } = usePull(store, 'todos', () => ({ projectId: props.projectId }))
+
+// Connectivity, outbox depth, conflicts
+const { online, syncing, pendingOps, conflicts } = useSyncStatus(store)
+
+function add (title: string) {
+  store.mutate.addTodo({ id: store.id(), projectId: props.projectId, title, done: false })
+}
+</script>
+
+<template>
+  <TodoItem v-for="t in todos" :key="t.id" :todo="t" :saving="t.$pending" />
+  <p v-if="loading">Refreshing…</p>
+  <OfflineBanner v-if="!online" :queued="pendingOps" />
+  <ConflictList :conflicts="conflicts" />
+</template>
+```
+
+The store itself stays a plain module-level singleton — define it once in `store.ts` and import it wherever needed. Mutations are called directly on the store (`store.mutate.addTodo(...)`); only *reading* needs the composables.
+
+## `useQuery(store, selector)`
+
+Returns a `ComputedRef<R>` that recomputes the selector against the latest snapshot on every store change.
+
+```ts
+const todos = useQuery(store, s => s.todos.where(t => !t.done))
+const count = useQuery(store, s => s.todos.size)
+const todo  = useQuery(store, s => s.todos.get(props.id))
+```
+
+- Selectors should be cheap and pure — they run on each store change.
+- To depend on component state, just reference it; the `computed` tracks it:
+  ```ts
+  const filter = ref<'all' | 'open'>('open')
+  const todos = useQuery(store, s =>
+    filter.value === 'all' ? s.todos.all() : s.todos.where(t => !t.done))
+  ```
+- Subscriptions are cleaned up automatically when the component's effect scope disposes.
+
+## `usePull(store, name, args?)`
+
+Runs a [pull](/concepts/pulls) immediately, and re-runs it whenever `args` changes. `args` may be a plain value, a `ref`, or a getter (it's watched deeply):
+
+```ts
+const { loading, error, refetch } = usePull(store, 'todos', () => ({ projectId: props.projectId }))
+```
+
+| Return | Type | Meaning |
+|---|---|---|
+| `loading` | `Ref<boolean>` | a fetch is in flight |
+| `error` | `ShallowRef<unknown>` | the last fetch error, `null` while retrying/succeeding |
+| `refetch` | `() => Promise<void>` | run the pull again manually |
+
+Remember data renders from `useQuery` (cached, instantly) regardless of `loading` — `usePull` state is for spinners and error banners, not for gating the data.
+
+## `useSyncStatus(store)`
+
+Reactive sync state for offline banners, outbox badges and conflict UI:
+
+```ts
+const { online, syncing, pendingOps, conflicts } = useSyncStatus(store)
+```
+
+| Return | Type | Meaning |
+|---|---|---|
+| `online` | `ComputedRef<boolean>` | backend reachability (verified by real requests, not just `navigator.onLine`) |
+| `syncing` | `ComputedRef<boolean>` | the push loop is currently running |
+| `pendingOps` | `ComputedRef<number>` | queued writes not yet confirmed |
+| `conflicts` | `ComputedRef<Conflict[]>` | dropped writes awaiting a [decision](/concepts/conflicts) |
+
+## SSR / Nuxt
+
+The core detects its environment: without `indexedDB` it falls back to in-memory storage, so importing the store during SSR is safe. Since the interesting behavior (persistence, outbox, multi-tab) is client-side, the simplest setup is to keep Eremite-driven components client-only, or guard pulls with `import.meta.client` in Nuxt.

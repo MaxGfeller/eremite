@@ -1,0 +1,65 @@
+---
+title: "Introduction"
+description: "An offline-first data layer for apps that talk to any REST backend."
+icon: "book-open"
+---
+
+Eremite gives your app a local, optimistic view of your server data that keeps working without a connection. Reads are cached locally and render instantly on the next visit. Writes apply to the UI immediately, go into a persistent outbox, and are pushed to your API when connectivity allows — in order, exactly once, surviving page reloads.
+
+Unlike sync engines, Eremite requires **nothing special on the server**: if you can call your API with `fetch`, you can make your app offline-first. That includes backends that assign their own IDs — Eremite tracks placeholder IDs across relations, reloads and retries until the server provides the real ones.
+
+## Why Eremite
+
+<CardGroup cols={2}>
+  <Card title="Zero runtime dependencies" icon="feather">
+    IndexedDB, Web Locks, BroadcastChannel and `crypto` do the heavy lifting. The platform provides everything.
+  </Card>
+  <Card title="Optimistic UI done right" icon="wand-magic-sparkles">
+    Confirmed state and pending changes are kept separate, so rollbacks and conflicts can't corrupt your data.
+  </Card>
+  <Card title="Multi-tab safe" icon="window-restore">
+    Tabs elect a leader; a queued action is never submitted twice, no matter how many tabs are open.
+  </Card>
+  <Card title="Framework-agnostic" icon="puzzle-piece">
+    A plain `snapshot` + `subscribe` core, with official Vue and React bindings — and it's easy to write your own.
+  </Card>
+</CardGroup>
+
+## The model in one paragraph
+
+Your data lives in **collections** (typed maps of entities). Server-confirmed data is **base state**; base state is never touched optimistically. Every write is a named **mutator**: a pure, synchronous function that edits a transactional draft over *all* collections. Calling `store.mutate.createTodo(input)` appends an **op** (mutator name + input) to a persistent outbox and rebases: the visible snapshot is always *base state + pending ops replayed in order*. A **push handler** performs the network call for each op; on success the mutation is committed into base state, on failure it is retried, or rolled back and surfaced as a **conflict**. Because the visible state is derived, rollback and reordering are trivial — nothing is ever patched in place.
+
+## Packages
+
+| Package | What it is |
+|---|---|
+| `@eremitejs/core` | The store: collections, mutators, the outbox, IDs and refs, pulls, conflicts, persistence, multi-tab. |
+| `@eremitejs/vue` | Vue 3 composables: `useQuery`, `usePull`, `useSyncStatus`. |
+| `@eremitejs/react` | React hooks: `useQuery`, `usePull`, `useSyncStatus`. |
+
+## Is Eremite for you?
+
+Eremite is a good fit when:
+
+- Your app talks to a **REST-ish HTTP API** you can call with `fetch` — yours or a third party's.
+- You want **instant, optimistic UI** and resilience to flaky or absent connectivity.
+- You can't (or don't want to) run special sync infrastructure on the server.
+
+It is *not* a sync engine: the server remains the source of truth, and Eremite never invents a diff protocol between client and server. If you need real-time multiplayer with server-authoritative rebase, look at the [comparisons](/comparisons/overview) for tools built for that.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Define a store and ship an offline-first todo list in five minutes.
+  </Card>
+  <Card title="How it works" icon="gears" href="/concepts/how-it-works">
+    Base state, the outbox, and the rebase loop — the whole mental model.
+  </Card>
+  <Card title="Vue integration" icon="vuejs" href="/frameworks/vue">
+    `useQuery`, `usePull` and `useSyncStatus` as Vue 3 composables.
+  </Card>
+  <Card title="React integration" icon="react" href="/frameworks/react">
+    The same three hooks, built on `useSyncExternalStore`.
+  </Card>
+</CardGroup>

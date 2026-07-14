@@ -1,0 +1,56 @@
+---
+title: "@eremitejs/vue"
+description: "API reference for the Vue 3 composables."
+icon: "vuejs"
+---
+
+```bash
+npm install @eremitejs/core @eremitejs/vue
+```
+
+See the [Vue guide](/frameworks/vue) for usage patterns; this page is the reference. All composables subscribe to the store and clean up automatically when the calling effect scope disposes.
+
+## `useQuery(store, selector)`
+
+```ts
+function useQuery<S, R>(store: S, selector: (snapshot: S['snapshot']) => R): ComputedRef<R>
+```
+
+A computed that re-runs `selector` against the latest optimistic snapshot on every store change. The selector may also reference Vue reactive state — the computed tracks it as usual.
+
+```ts
+const todos = useQuery(store, s => s.todos.where(t => !t.done))
+```
+
+## `usePull(store, name, args?)`
+
+```ts
+function usePull(
+  store: Store,
+  name: string,
+  args?: MaybeRefOrGetter<unknown>
+): {
+  loading: Ref<boolean>
+  error: ShallowRef<unknown>
+  refetch: () => Promise<void>
+}
+```
+
+Runs the pull immediately. When `args` is provided (a value, `ref`, or getter), it's watched **deeply** and the pull re-runs on change. `error` holds the last `fetch` rejection, reset to `null` at the start of each attempt.
+
+```ts
+const { loading, error, refetch } = usePull(store, 'todos', () => ({ projectId: props.id }))
+```
+
+## `useSyncStatus(store)`
+
+```ts
+function useSyncStatus(store: Store): {
+  online: ComputedRef<boolean>
+  syncing: ComputedRef<boolean>
+  pendingOps: ComputedRef<number>
+  conflicts: ComputedRef<Conflict[]>
+}
+```
+
+Reactive views over [`store.status`](/api/store#store-status) and [`store.conflicts`](/api/store#store-conflicts).

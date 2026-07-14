@@ -1,0 +1,98 @@
+---
+title: "Push handlers"
+description: "The network effect per mutator — how queued writes reach your API."
+icon: "paper-plane"
+---
+
+A **push handler** is the network half of a write: for each mutator, an async function that performs the actual API call. Push handlers run from the outbox — strictly in order, one at a time, with retries and backoff — on exactly one tab (the [leader](/concepts/multi-tab)).
+
+```ts
+push: {
+  async createTodo ({ input, idempotencyKey }) {
+    await api.post('/todos', input, {
+      headers: { 'Idempotency-Key': idempotencyKey }
+    })
+  },
+  async toggleTodo ({ input }) {
+    await api.patch(`/todos/${input.id}`, { done: input.done })
+  }
+}
+```
+
+Omitting a handler makes the mutator [local-only](/concepts/mutators#local-only-mutators).
+
+## The push context
+
+Each handler receives one argument:
+
+| Field | Meaning |
+|---|---|
+| `input` | The op's input, with every resolved [ref](/concepts/ids-and-refs) already substituted for its real ID. |
+| `op` | `{ id, mutator, enqueuedAt, attempt }` — attempt starts at 1. |
+| `idempotencyKey` | Equal to the op ID. Send it so server-side dedup makes retries safe. |
+| `resolve(label, realId)` | Report the server-assigned ID for a ref minted via `ctx.ref(label)`. |
+
+## Signal failures by throwing
+
+A handler that returns (or resolves) counts as success and commits the op. To signal failure, **throw** — and for Eremite's default classification to work, HTTP errors should carry the status code on a `status` (or `response.status`) property.
+
+<Warning>
+`fetch()` does **not** throw on 4xx/5xx responses. If your push handlers use raw `fetch`, check `response.ok` and throw an error carrying the status:
+</Warning>
+
+```ts
+class HttpError extends Error {
+  constructor (public status: number, message: string) { super(message) }
+}
+
+async function push (url: string, init: RequestInit): Promise<Response> {
+  const response = await fetch(url, init)   // network failure throws TypeError → offline
+  if (!response.ok) {
+    throw new HttpError(response.status, `${init.method} ${url} → ${response.status}`)
+  }
+  return response
+}
+```
+
+Libraries like axios and ky already throw errors with a usable status, so they work with the defaults out of the box.
+
+## Failure classification
+
+Push failures are classified into three verdicts:
+
+| Failure | Default verdict | Behavior |
+|---|---|---|
+| Network error (fetch `TypeError`) | `offline` | Store goes **offline**; the op keeps waiting and no attempt is consumed. Reconnection is probed with backoff. |
+| HTTP 408 / 425 / 429 / 5xx | `retry` | Exponential backoff (`baseDelayMs` · 2^attempt, capped at `maxDelayMs`), up to `retry.maxAttempts` (default 5). Then the op is dropped as a `push-failed` [conflict](/concepts/conflicts). |
+| Other 4xx | `drop` | The server said no. The op's optimistic effect is rolled back and it becomes a `rejected` conflict. |
+| Unknown errors | `retry` | Anything unclassifiable is retried. |
+
+While offline, the reported status stays offline until a push or pull actually succeeds — the UI never claims a connection that is still down.
+
+### Custom classification
+
+Override the policy per store with `onPushError`. Return a verdict, or `undefined` to fall through to the defaults:
+
+```ts
+createStore({
+  // ...
+  retry: { maxAttempts: 3, baseDelayMs: 1500, maxDelayMs: 8000 },
+  onPushError (error, { op, attempt }) {
+    if (error instanceof HttpError && error.status === 409) return 'drop'
+    if (op.mutator === 'sendPayment') return 'drop'   // never blind-retry money
+    return undefined                                   // default policy
+  }
+})
+```
+
+## Idempotency
+
+Retries mean your API may see the same logical request twice — for example when the response to a successful `POST` is lost in transit. The `idempotencyKey` (stable across retries, unique per op) is the fix: send it as an `Idempotency-Key` header and dedupe on the server, and retries become harmless.
+
+If you can't touch the server, prefer naturally idempotent designs: `PUT`/`PATCH` with absolute values (`{ done: true }` rather than "toggle"), and [client-generated IDs](/concepts/ids-and-refs) so a repeated create is a detectable duplicate rather than a second row.
+
+## Ordering
+
+The outbox is drained strictly in enqueue order; a later op never overtakes an earlier one. Additionally, an op whose input contains an unresolved ref implicitly waits for the op that produces it — see [IDs and refs](/concepts/ids-and-refs#automatic-ordering).
+
+`store.flush()` kicks the push loop and resolves when it settles (drained, offline, or backing off) — useful in tests and before critical navigation.

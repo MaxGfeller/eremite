@@ -1,0 +1,51 @@
+---
+title: "Choosing a tool"
+description: "Where Eremite sits among server-state caches, local-first databases and sync engines."
+icon: "scale-balanced"
+---
+
+"Offline-first" covers at least three different categories of tool, and picking the wrong category hurts more than picking the wrong library within one. The honest map:
+
+| | Server changes required | Writes offline | Durable write queue | Real-time sync | Weight |
+|---|---|---|---|---|---|
+| **Eremite** | none | ✅ optimistic + outbox | ✅ ordered, exactly-once | ❌ pull-based | tiny, zero deps |
+| **TanStack Query** | none | ⚠️ manual optimistic updates; paused mutations don't survive reload by default | ⚠️ opt-in, no ordering/dependency guarantees | ❌ | small |
+| **Replicache / Zero** | dedicated push/pull endpoints + poke | ✅ | ✅ | ✅ server-authoritative rebase | medium |
+| **RxDB** | replication endpoint (or plugins) | ✅ | ✅ via replication protocol | ✅ with suitable backend | large: full database |
+| **PowerSync / ElectricSQL** | sync service + Postgres integration | ✅ | ✅ | ✅ | infrastructure |
+
+## The one-question decision tree
+
+**Can you change the server?**
+
+- **No — it's an existing or third-party REST API.** Your options are TanStack Query (great caching, DIY offline writes) or Eremite (offline writes as the core feature). This is the gap Eremite exists to fill: a durable, ordered, exactly-once outbox with optimistic UI, over plain `fetch` calls.
+- **Yes, and you need real-time collaboration or partial replication of a large dataset.** Use a real sync engine — [Replicache/Zero](/comparisons/replicache), [PowerSync or ElectricSQL](/comparisons/sync-engines). They earn their infrastructure cost when multiple users edit shared state live.
+- **Yes, but you just need robust offline CRUD.** Eremite with client-generated UUIDv7 IDs and an `Idempotency-Key` header on the server is a much smaller lift than a sync protocol — and your API remains an ordinary REST API for every other consumer.
+
+## What Eremite deliberately doesn't do
+
+Being honest about the trade-offs Eremite makes:
+
+- **No real-time push.** Data freshness is pull-based; you decide when to refetch. No websockets, no server "poke".
+- **No merge algorithms.** Conflicts are detected, rolled back and surfaced to your UI — not auto-merged. The server's verdict is final.
+- **No query language.** Collections are maps; you select with plain functions (`where`, `get`, `all`). There's no index engine or reactive query planner.
+- **No partial-replication protocol.** A pull writes what you fetched; syncing a 500k-row table incrementally is sync-engine territory.
+
+If those trade-offs fit your app — and for the large class of "CRUD app over a REST API that should survive a tunnel" they do — you get offline-first behavior for the cost of an npm install.
+
+## Detailed comparisons
+
+<CardGroup cols={2}>
+  <Card title="vs. Replicache" href="/comparisons/replicache" icon="rotate">
+    The closest conceptual relative — same mutator idea, very different server story.
+  </Card>
+  <Card title="vs. TanStack Query" href="/comparisons/tanstack-query" icon="layer-group">
+    Server-state caching vs. an offline-first data layer.
+  </Card>
+  <Card title="vs. RxDB" href="/comparisons/rxdb" icon="database">
+    A client-side database with replication vs. a data layer over your API.
+  </Card>
+  <Card title="vs. sync engines" href="/comparisons/sync-engines" icon="server">
+    PowerSync, ElectricSQL and friends — when you should use them instead.
+  </Card>
+</CardGroup>

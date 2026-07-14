@@ -1,0 +1,65 @@
+---
+title: "@eremitejs/react"
+description: "API reference for the React hooks."
+icon: "react"
+---
+
+```bash
+npm install @eremitejs/core @eremitejs/react
+```
+
+See the [React guide](/frameworks/react) for usage patterns; this page is the reference. The hooks are built on `useSyncExternalStore`, so they're concurrent-rendering safe and tear-free. Subscriptions are cleaned up on unmount.
+
+## `useQuery(store, selector)`
+
+```ts
+function useQuery<S, R>(store: S, selector: (snapshot: S['snapshot']) => R): R
+```
+
+Re-renders the component on every store change and returns `selector(store.snapshot)`. The selector runs during render, so it can freely close over props and state — no dependency array.
+
+```tsx
+const todos = useQuery(store, s => s.todos.where(t => !t.done))
+```
+
+## `usePull(store, name, args?)`
+
+```ts
+function usePull(store: Store, name: string, args?: unknown): {
+  loading: boolean
+  error: unknown
+  refetch: () => Promise<void>
+}
+```
+
+Runs the pull on mount and whenever `args` changes. Args are compared **by value** (JSON serialization), so a fresh object literal per render does not retrigger the pull. `error` holds the last `fetch` rejection, reset to `null` at the start of each attempt.
+
+```tsx
+const { loading, error, refetch } = usePull(store, 'todos', { projectId })
+```
+
+## `useSyncStatus(store)`
+
+```ts
+function useSyncStatus(store: Store): {
+  online: boolean
+  syncing: boolean
+  pendingOps: number
+  conflicts: Conflict[]
+}
+```
+
+A memoized object over [`store.status`](/api/store#store-status) and [`store.conflicts`](/api/store#store-conflicts), refreshed on every store change.
+
+## `useStoreVersion(store)`
+
+```ts
+function useStoreVersion(store: Store): number
+```
+
+The low-level primitive under the other hooks: re-renders on every store change and returns a monotonically increasing version. Use it as a dependency for custom memoized derivations:
+
+```tsx
+const version = useStoreVersion(store)
+const stats = useMemo(() => computeStats(store.snapshot), [version])
+```

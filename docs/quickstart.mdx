@@ -1,0 +1,159 @@
+---
+title: "Quickstart"
+description: "From npm install to an offline-first app in five minutes."
+icon: "rocket"
+---
+
+<Steps>
+<Step title="Install">
+
+```bash
+npm install @eremitejs/core
+npm install @eremitejs/vue    # or @eremitejs/react
+```
+
+Eremite has zero runtime dependencies and requires Node 20+ for tooling. The core runs in any modern browser (IndexedDB, Web Locks, BroadcastChannel and `crypto` are all it needs) and falls back to in-memory storage outside the browser, so SSR and tests just work.
+
+</Step>
+<Step title="Define a store">
+
+Collections hold your data, mutators describe local changes, push handlers do the network calls, and pulls fetch server data:
+
+```ts store.ts
+import { collection, createStore } from '@eremitejs/core'
+
+interface Todo { id: string; title: string; done: boolean }
+
+export const store = createStore({
+  name: 'app',
+  collections: {
+    todos: collection<Todo>()
+  },
+
+  // Pure, synchronous, replayable local changes.
+  mutators: {
+    addTodo (tx, input: Todo) {
+      tx.todos.set(input.id, input)
+    },
+    toggleTodo (tx, input: { id: string }) {
+      tx.todos.update(input.id, t => { t.done = !t.done })
+    }
+  },
+
+  // The network effect per mutator, run from the outbox with retries.
+  push: {
+    async addTodo ({ input, idempotencyKey }) {
+      await fetch('/api/todos', {
+        method: 'POST',
+        headers: { 'Idempotency-Key': idempotencyKey },
+        body: JSON.stringify(input)
+      })
+    },
+    async toggleTodo ({ input }) {
+      await fetch(`/api/todos/${input.id}/toggle`, { method: 'PATCH' })
+    }
+  },
+
+  // Server reads, written into local base state and cached.
+  pulls: {
+    todos: {
+      fetch: async () => await (await fetch('/api/todos')).json(),
+      write (tx, todos: Todo[]) {
+        for (const todo of todos) tx.todos.set(todo.id, todo)
+      }
+    }
+  }
+})
+```
+
+</Step>
+<Step title="Use it in a component">
+
+<CodeGroup>
+
+```vue Vue
+<script setup lang="ts">
+import { useQuery, usePull, useSyncStatus } from '@eremitejs/vue'
+import { store } from './store'
+
+usePull(store, 'todos')
+const todos = useQuery(store, s => s.todos.all())
+const { online, pendingOps } = useSyncStatus(store)
+
+function add (title: string) {
+  store.mutate.addTodo({ id: store.id(), title, done: false })
+}
+</script>
+
+<template>
+  <TodoItem v-for="t in todos" :key="t.id" :todo="t" :saving="t.$pending" />
+  <OfflineBanner v-if="!online" :queued="pendingOps" />
+</template>
+```
+
+```tsx React
+import { useQuery, usePull, useSyncStatus } from '@eremitejs/react'
+import { store } from './store'
+
+export function TodoList () {
+  usePull(store, 'todos')
+  const todos = useQuery(store, s => s.todos.all())
+  const { online, pendingOps } = useSyncStatus(store)
+
+  const add = (title: string) =>
+    store.mutate.addTodo({ id: store.id(), title, done: false })
+
+  return (
+    <>
+      {todos.map(t => <TodoItem key={t.id} todo={t} saving={t.$pending} />)}
+      {!online && <OfflineBanner queued={pendingOps} />}
+    </>
+  )
+}
+```
+
+```ts Vanilla
+import { store } from './store'
+
+await store.ready                        // persisted state hydrated
+
+store.subscribe(() => {
+  render(store.snapshot.todos.all(), store.status)
+})
+
+void store.pull('todos')
+store.mutate.addTodo({ id: store.id(), title: 'Ship it', done: false })
+```
+
+</CodeGroup>
+
+</Step>
+<Step title="Go offline">
+
+That's the whole offline story. The new todo renders instantly, flagged `$pending` until the server confirms it. If the user is offline, nothing changes in your code: the op waits in IndexedDB (across reloads), the UI shows the optimistic entity, and the push happens after reconnect — in order, exactly once.
+
+```ts
+const id = store.id()   // client-generated UUIDv7 — this IS the real ID
+const { done } = store.mutate.addTodo({ id, title: 'Ship it', done: false })
+
+store.snapshot.todos.get(id)   // visible immediately, marked { $pending: true }
+await done                     // { status: 'committed' } once the server accepted it
+```
+
+</Step>
+</Steps>
+
+<Note>
+Does your backend assign its own IDs? Eremite handles that too — see [IDs and refs](/concepts/ids-and-refs).
+</Note>
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="How it works" icon="gears" href="/concepts/how-it-works">
+    The base-state + outbox + rebase model that makes rollback trivial.
+  </Card>
+  <Card title="Example apps" icon="flask" href="/examples">
+    Four complete apps — tasks and a Hacker News reader, in Vue and React.
+  </Card>
+</CardGroup>

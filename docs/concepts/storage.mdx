@@ -1,0 +1,99 @@
+---
+title: "Storage and versioning"
+description: "Where Eremite persists data, how to swap the adapter, and what happens when your schema changes."
+icon: "database"
+---
+
+## What gets persisted
+
+Eremite persists everything it needs to survive a reload mid-flight:
+
+| Data | Layout | Purpose |
+|---|---|---|
+| Base state | one row per record (`b:<collection>:<id>`) | instant cached reads on next launch |
+| The outbox (`ops`) | single document | queued writes survive reloads |
+| The ref → ID map (`idmap`) | single document | interrupted [ref chains](/concepts/ids-and-refs) continue correctly |
+| Conflicts (`conflicts`) | single document | rejected writes stay presentable |
+| Meta (`meta`) | single document | the persisted schema `version` |
+
+Per-record rows mean a large collection doesn't get rewritten wholesale on every change — only the touched records are written.
+
+## Adapters
+
+Persistence defaults to **IndexedDB** in the browser (database name `eremite:<store name>`) and an in-memory adapter elsewhere, so SSR and Node tests work without configuration.
+
+```ts
+import { createStore, memoryStorage, idbStorage } from '@eremitejs/core'
+
+createStore({ name: 'app', ... })                          // default: IndexedDB in the browser
+createStore({ name: 'app', storage: memoryStorage(), ... }) // explicit in-memory (tests)
+createStore({ name: 'app', storage: null, ... })            // no persistence at all
+createStore({ name: 'app', storage: idbStorage('custom-db-name'), ... })
+```
+
+<Note>
+With `storage: null` the store is purely in-memory: still optimistic, still ordered — but the outbox does not survive a reload.
+</Note>
+
+### Custom adapters
+
+Anything that can implement five async methods can back an Eremite store — SQLite in Electron/Capacitor, OPFS, a test double:
+
+```ts
+import type { StorageAdapter } from '@eremitejs/core'
+
+const myAdapter: StorageAdapter = {
+  async get (key) { /* value or undefined */ },
+  async set (key, value) { /* upsert */ },
+  async delete (key) { /* remove */ },
+  async entries (prefix) { /* all [key, value] pairs whose key starts with prefix */ },
+  async clear () { /* wipe */ }
+}
+```
+
+Values are structured-clone-compatible plain data. `entries(prefix)` powers base-state hydration, so make prefix scans efficient if your collections are large.
+
+## Versioning
+
+Bump `version` when your entity shapes change:
+
+```ts
+createStore({
+  name: 'app',
+  version: 2,   // default 1
+  // ...
+})
+```
+
+On startup, if the persisted version differs from the configured one, the default behavior is:
+
+- **Drop cached base state.** It's just a cache — the next pull refetches it.
+- **Keep the outbox.** Queued ops are user data; throwing them away would lose real work.
+
+<Warning>
+Kept ops replay through your *new* mutator code. If a mutator's input shape changed incompatibly, handle both shapes in the mutator (and push handler) for one release, or migrate the ops in `onVersionChange`.
+</Warning>
+
+### Custom migrations
+
+For anything smarter than drop-and-refetch, provide `onVersionChange`. It runs before hydration, with direct access to the storage adapter:
+
+```ts
+createStore({
+  name: 'app',
+  version: 3,
+  async onVersionChange (from, to, storage) {
+    if (from === 2) {
+      // e.g. rewrite persisted records in place
+      for (const [key, value] of await storage.entries('b:todos:')) {
+        await storage.set(key, { ...value as Todo, priority: 'normal' })
+      }
+    } else {
+      // unknown ancestry: fall back to dropping base state
+      for (const [key] of await storage.entries('b:')) await storage.delete(key)
+    }
+  }
+})
+```
+
+`from` is `null` on a fresh install that never persisted a version.

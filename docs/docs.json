@@ -1,0 +1,108 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Eremite.js",
+  "description": "An offline-first data layer for apps that talk to any REST backend.",
+  "colors": {
+    "primary": "#b0842a",
+    "light": "#dcb85f",
+    "dark": "#6f4a2f"
+  },
+  "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/favicon.svg",
+    "dark": "/favicon.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Website",
+        "href": "https://eremitejs.org"
+      }
+    ],
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/MaxGfeller/eremite"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "examples"
+            ]
+          },
+          {
+            "group": "Core concepts",
+            "pages": [
+              "concepts/how-it-works",
+              "concepts/collections",
+              "concepts/mutators",
+              "concepts/push",
+              "concepts/pulls",
+              "concepts/ids-and-refs",
+              "concepts/conflicts",
+              "concepts/storage",
+              "concepts/multi-tab"
+            ]
+          },
+          {
+            "group": "Framework integration",
+            "pages": [
+              "frameworks/vue",
+              "frameworks/react",
+              "frameworks/custom"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "groups": [
+          {
+            "group": "@eremitejs/core",
+            "pages": [
+              "api/create-store",
+              "api/store",
+              "api/collections",
+              "api/storage"
+            ]
+          },
+          {
+            "group": "Framework bindings",
+            "pages": [
+              "api/vue",
+              "api/react"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Comparisons",
+        "groups": [
+          {
+            "group": "Comparisons",
+            "pages": [
+              "comparisons/overview",
+              "comparisons/replicache",
+              "comparisons/tanstack-query",
+              "comparisons/rxdb",
+              "comparisons/sync-engines"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/MaxGfeller/eremite"
+    }
+  }
+}

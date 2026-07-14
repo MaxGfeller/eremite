@@ -1,0 +1,34 @@
+---
+title: "Multi-tab"
+description: "Leader election, cross-tab merging, and why an op is never pushed twice."
+icon: "window-restore"
+---
+
+Users open tabs. Without coordination, three tabs each running a push loop would submit the same queued write three times. Eremite treats multi-tab as a first-class concern rather than an afterthought:
+
+- **One leader.** Tabs elect a single leader via the **Web Locks API**; only the leader drains the outbox, so an op is never pushed twice. When the leader closes, the lock releases and another tab takes over automatically — including any ops still queued.
+- **Any tab can write.** Enqueueing doesn't require leadership: the outbox document is merged under a cross-tab lock, so concurrent writers never lose ops. Ops from different tabs are ordered by enqueue time.
+- **Every tab stays current.** A **BroadcastChannel** notifies the other tabs when state or the outbox changes; each tab reloads from storage and re-derives its snapshot, so all windows render the same data.
+- **`done` resolves everywhere.** When the leader commits or drops an op, the originating tab's `done` promise settles even though the push ran elsewhere.
+
+All of this is on by default in the browser and requires no configuration.
+
+## Disabling it
+
+```ts
+createStore({
+  name: 'app',
+  multiTab: false,
+  // ...
+})
+```
+
+With `multiTab: false` the store considers itself leader unconditionally. That's the right call when you *know* there's exactly one instance — an Electron main window, a single-instance kiosk, or tests. It's the wrong call for anything users open in ordinary browser tabs.
+
+The default is `true` whenever the Web Locks API is available (every modern browser), and effectively single-instance elsewhere (Node, SSR).
+
+## Things worth knowing
+
+- **Leadership is invisible.** There's no API to ask "am I the leader?" — by design. Enqueue from any tab; delivery is the store's problem.
+- **Same store name = same universe.** Coordination is keyed by the store `name`. Two stores with different names are fully independent (separate databases, locks and channels).
+- **Private windows** get their own IndexedDB universe, so a private tab won't see (or drain) the main session's outbox. That's a browser property, not an Eremite one.

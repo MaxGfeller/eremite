@@ -1,0 +1,91 @@
+---
+title: "Pulls"
+description: "Server reads: fetched, written into base state, cached locally."
+icon: "cloud-arrow-down"
+---
+
+Reads take a different path than writes — they are never queued for later replay. A **pull** fetches from your API, then atomically writes the result into base state. Pending ops are rebased on top, so an optimistic edit is never clobbered by a refetch racing it. Pulled data is persisted per record and hydrates instantly on the next launch, giving you stale-while-revalidate for free.
+
+```ts
+pulls: {
+  todos: {
+    fetch: async (args: { projectId: string }) =>
+      await api.get(`/projects/${args.projectId}/todos`),
+    write (tx, todos: Todo[], args) {
+      for (const todo of todos) tx.todos.set(todo.id, todo)
+    }
+  }
+}
+```
+
+Run one:
+
+```ts
+await store.pull('todos', { projectId })
+```
+
+`store.pull` returns whatever `fetch` resolved with, and rejects if `fetch` throws — the framework bindings' [`usePull`](/frameworks/vue) captures that into an `error` state for you.
+
+## The write step
+
+`write` receives the same transactional draft as mutators, so you decide how server data lands in your collections.
+
+**Merge** (the default posture — keep local rows the response didn't mention):
+
+```ts
+write (tx, todos: Todo[]) {
+  for (const todo of todos) tx.todos.set(todo.id, todo)
+}
+```
+
+**Full replacement** (the response is the complete truth — drop rows the server no longer has):
+
+```ts
+write (tx, tasks: ServerTask[]) {
+  for (const id of tx.tasks.keys()) {
+    if (!tasks.some(t => String(t.id) === id)) tx.tasks.delete(id)
+  }
+  for (const task of tasks) tx.tasks.set(task.id, { ...task, id: String(task.id) })
+}
+```
+
+**Fan out across collections** — one pull may hydrate several collections, and can reshape the payload however it likes:
+
+```ts
+pulls: {
+  dashboard: {
+    fetch: async () => await api.get('/dashboard'),
+    write (tx, data: { projects: Project[]; todos: Todo[] }) {
+      for (const p of data.projects) tx.projects.set(p.id, p)
+      for (const t of data.todos) tx.todos.set(t.id, t)
+    }
+  }
+}
+```
+
+<Note>
+Like mutators, `write` must be synchronous and pure — all the async work belongs in `fetch`. The write is applied atomically after `fetch` resolves.
+</Note>
+
+## Pulls vs. pending writes
+
+The order of operations is what makes optimistic edits safe:
+
+1. `fetch` resolves with server data.
+2. `write` applies it to **base state** (not to the visible snapshot).
+3. Every pending op is **replayed on top** of the new base state.
+
+So if the user toggled a todo offline and a pull returns the stale, untoggled version, the visible snapshot still shows the toggle — the pending op wins until it commits or is dropped. There's no "refetch raced my mutation" bug to defend against.
+
+A successful pull also counts as proof of connectivity: if the store was offline, it flips back online.
+
+## When to pull
+
+Eremite doesn't poll or auto-refetch; you decide when data might be stale. Typical triggers:
+
+- On mount / route change: `usePull(store, 'todos', args)` in the [Vue](/frameworks/vue) and [React](/frameworks/react) bindings runs the pull automatically and re-runs it when args change.
+- After reconnect, on window focus, or on an interval — call `store.pull()` from whatever scheduler suits your app.
+
+```ts
+window.addEventListener('focus', () => { void store.pull('todos') })
+```

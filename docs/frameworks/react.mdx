@@ -1,0 +1,98 @@
+---
+title: "React"
+description: "React hooks: useQuery, usePull and useSyncStatus, built on useSyncExternalStore."
+icon: "react"
+---
+
+```bash
+npm install @eremitejs/core @eremitejs/react
+```
+
+`@eremitejs/react` bridges the framework-agnostic core into React via `useSyncExternalStore`. Snapshots are immutable objects replaced on change, so re-renders are cheap and tear-free — no context provider required.
+
+## A complete component
+
+```tsx
+import { useQuery, usePull, useSyncStatus } from '@eremitejs/react'
+import { store } from '../store' // your createStore() instance
+
+export function ProjectTodos ({ projectId }: { projectId: string }) {
+  // Server read; re-runs when args change (compared by value)
+  const { loading, error, refetch } = usePull(store, 'todos', { projectId })
+
+  // Selection over the optimistic snapshot; re-renders on store changes
+  const todos = useQuery(store, s => s.todos.where(t => t.projectId === projectId))
+
+  // Connectivity, outbox depth, conflicts
+  const { online, syncing, pendingOps, conflicts } = useSyncStatus(store)
+
+  const add = (title: string) =>
+    store.mutate.addTodo({ id: store.id(), projectId, title, done: false })
+
+  return (
+    <>
+      {todos.map(t => <TodoItem key={t.id} todo={t} saving={t.$pending} />)}
+      {loading && <p>Refreshing…</p>}
+      {!online && <OfflineBanner queued={pendingOps} />}
+      <ConflictList conflicts={conflicts} />
+    </>
+  )
+}
+```
+
+The store stays a plain module-level singleton — define it once in `store.ts` and import it. Mutations are called directly on the store; only *reading* needs hooks.
+
+## `useQuery(store, selector)`
+
+Re-renders the component on every store change and runs the selector against the latest snapshot:
+
+```tsx
+const todos = useQuery(store, s => s.todos.where(t => !t.done))
+const count = useQuery(store, s => s.todos.size)
+const todo  = useQuery(store, s => s.todos.get(id))
+```
+
+- The selector runs during render, so it can freely close over props and state — no dependency array needed.
+- Selectors should be cheap and pure. For expensive derivations, select the raw data and `useMemo` the derivation on top.
+
+## `usePull(store, name, args?)`
+
+Runs a [pull](/concepts/pulls) on mount and whenever `args` changes — compared **by value** (via JSON serialization), so passing a fresh object literal each render is fine and does *not* cause a refetch loop:
+
+```tsx
+const { loading, error, refetch } = usePull(store, 'todos', { projectId })
+```
+
+| Return | Type | Meaning |
+|---|---|---|
+| `loading` | `boolean` | a fetch is in flight |
+| `error` | `unknown` | the last fetch error, `null` on success |
+| `refetch` | `() => Promise<void>` | run the pull again manually |
+
+Remember data renders from `useQuery` (cached, instantly) regardless of `loading` — `usePull` state is for spinners and error banners, not for gating the data.
+
+## `useSyncStatus(store)`
+
+```tsx
+const { online, syncing, pendingOps, conflicts } = useSyncStatus(store)
+```
+
+| Return | Type | Meaning |
+|---|---|---|
+| `online` | `boolean` | backend reachability (verified by real requests, not just `navigator.onLine`) |
+| `syncing` | `boolean` | the push loop is currently running |
+| `pendingOps` | `number` | queued writes not yet confirmed |
+| `conflicts` | `Conflict[]` | dropped writes awaiting a [decision](/concepts/conflicts) |
+
+## `useStoreVersion(store)`
+
+Also exported: a lower-level hook returning a monotonically increasing number that changes on every store update. Useful as a dependency for custom memoized derivations:
+
+```tsx
+const version = useStoreVersion(store)
+const stats = useMemo(() => computeStats(store.snapshot), [version])
+```
+
+## SSR / Next.js
+
+The core detects its environment: without `indexedDB` it falls back to in-memory storage, so importing the store on the server is safe. Since the value of Eremite (persistence, outbox, multi-tab) is client-side, mark Eremite-driven components `'use client'` in Next.js.
