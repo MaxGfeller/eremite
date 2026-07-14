@@ -1,15 +1,15 @@
-import { CollectionSnapshot, DraftCollection } from './collection'
-import type { CollectionsDef } from './collection'
-import { collectRefs, mintRef, substituteRefs, uuidv7 } from './ids'
-import type { Ref } from './ids'
-import { defaultStorage } from './storage'
-import type { StorageAdapter } from './storage'
-import { acquireLeadership, TabChannel, withLock } from './tabs'
-import type { TabMessage } from './tabs'
+import { CollectionSnapshot, DraftCollection } from './collection.js'
+import type { CollectionsDef } from './collection.js'
+import { collectRefs, mintRef, substituteRefs, uuidv7 } from './ids.js'
+import type { Ref } from './ids.js'
+import { defaultStorage } from './storage.js'
+import type { StorageAdapter } from './storage.js'
+import { acquireLeadership, TabChannel, withLock } from './tabs.js'
+import type { TabMessage } from './tabs.js'
 import type {
   Conflict, MutateApi, MutationHandle, MutationOutcome, MutatorCtx, MutatorsDef,
   OpRecord, PushErrorVerdict, SnapshotOf, Store, StoreConfig, SyncStatus, Tx
-} from './types'
+} from './types.js'
 
 interface RebaseResult {
   results: Map<string, unknown>

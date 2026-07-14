@@ -1,6 +1,6 @@
 {
   "name": "@eremitejs/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Offline-first data layer for apps talking to any REST backend: persistent outbox, optimistic rebase, and first-class handling of server-assigned IDs.",
   "type": "module",
   "main": "./dist/index.js",

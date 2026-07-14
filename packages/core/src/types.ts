@@ -1,6 +1,6 @@
-import type { CollectionsDef, CollectionSnapshot, DraftCollection, EntityOf, WithPending } from './collection'
-import type { Ref } from './ids'
-import type { StorageAdapter } from './storage'
+import type { CollectionsDef, CollectionSnapshot, DraftCollection, EntityOf, WithPending } from './collection.js'
+import type { Ref } from './ids.js'
+import type { StorageAdapter } from './storage.js'
 
 /**
  * A persisted operation in the outbox: mutator name + input, replayable

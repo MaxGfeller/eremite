@@ -1,10 +1,10 @@
-export { createStore } from './store'
-export { collection, CollectionSnapshot, DraftCollection } from './collection'
-export type { CollectionDef, CollectionsDef, EntityOf, WithPending } from './collection'
-export { uuidv7, mintRef, isRef, collectRefs, substituteRefs, REF_PREFIX } from './ids'
-export type { Ref } from './ids'
-export { memoryStorage, idbStorage, defaultStorage } from './storage'
-export type { StorageAdapter } from './storage'
+export { createStore } from './store.js'
+export { collection, CollectionSnapshot, DraftCollection } from './collection.js'
+export type { CollectionDef, CollectionsDef, EntityOf, WithPending } from './collection.js'
+export { uuidv7, mintRef, isRef, collectRefs, substituteRefs, REF_PREFIX } from './ids.js'
+export type { Ref } from './ids.js'
+export { memoryStorage, idbStorage, defaultStorage } from './storage.js'
+export type { StorageAdapter } from './storage.js'
 export type {
   Conflict,
   InputOf,
@@ -25,4 +25,4 @@ export type {
   StoreConfig,
   SyncStatus,
   Tx
-} from './types'
+} from './types.js'

@@ -1,6 +1,6 @@
 {
   "name": "@eremitejs/react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "React hooks for Eremite, the offline-first data layer: useQuery, usePull, useSyncStatus.",
   "type": "module",
   "main": "./dist/index.js",
