@@ -4,9 +4,14 @@
   "name": "Eremite.js",
   "description": "An offline-first data layer for apps that talk to any REST backend.",
   "colors": {
-    "primary": "#b0842a",
+    "primary": "#8a651f",
     "light": "#dcb85f",
-    "dark": "#6f4a2f"
+    "dark": "#b0842a"
+  },
+  "seo": {
+    "metatags": {
+      "canonical": "https://docs.eremitejs.org"
+    }
   },
   "favicon": "/favicon.svg",
   "logo": {
@@ -17,7 +22,7 @@
     "links": [
       {
         "label": "Website",
-        "href": "https://eremitejs.org"
+        "href": "https://www.eremitejs.org"
       }
     ],
     "primary": {

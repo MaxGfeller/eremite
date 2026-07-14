@@ -2,6 +2,8 @@
 
 **An offline-first data layer for apps that talk to any REST backend.**
 
+[Website](https://www.eremitejs.org) · [Documentation](https://docs.eremitejs.org)
+
 Eremite gives your app a local, optimistic view of your server data that keeps working without a connection. Reads are cached locally and render instantly on the next visit. Writes apply to the UI immediately, go into a persistent outbox, and are pushed to your API when connectivity allows — in order, exactly once, surviving page reloads.
 
 Unlike sync engines, Eremite requires **nothing special on the server**: if you can call your API with `fetch`, you can make your app offline-first. That includes backends that assign their own IDs — Eremite tracks placeholder IDs across relations, reloads and retries until the server provides the real ones.
@@ -15,7 +17,7 @@ Unlike sync engines, Eremite requires **nothing special on the server**: if you 
 
 | Package | What it is |
 |---|---|
-| [`@eremitejs/core`](packages/core) | The store: collections, mutators, the outbox, IDs and refs, pulls, conflicts, persistence, multi-tab. **Its README is the full documentation.** |
+| [`@eremitejs/core`](packages/core) | The store: collections, mutators, the outbox, IDs and refs, pulls, conflicts, persistence, multi-tab. |
 | [`@eremitejs/vue`](packages/vue) | Vue 3 composables: `useQuery`, `usePull`, `useSyncStatus`. |
 | [`@eremitejs/react`](packages/react) | React hooks: `useQuery`, `usePull`, `useSyncStatus`. |
 
@@ -96,7 +98,7 @@ That's the whole offline story: the new todo renders instantly (flagged `$pendin
 
 From here:
 
-- **[`@eremitejs/core`](packages/core)** — the full documentation: how the store works, server-assigned IDs and relations, error handling and conflicts, storage and versioning, multi-tab behavior.
+- **[Documentation](https://docs.eremitejs.org)** — how the store works, server-assigned IDs and relations, error handling and conflicts, storage and versioning, multi-tab behavior.
 - **[`@eremitejs/vue`](packages/vue)** / **[`@eremitejs/react`](packages/react)** — the binding APIs for your framework.
 
 ## Examples

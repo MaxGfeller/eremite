@@ -41,7 +41,7 @@
   "bugs": {
     "url": "https://github.com/MaxGfeller/eremite/issues"
   },
-  "homepage": "https://eremitejs.org",
+  "homepage": "https://www.eremitejs.org",
   "publishConfig": {
     "access": "public"
   },
