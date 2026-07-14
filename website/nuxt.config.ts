@@ -26,6 +26,7 @@ export default defineNuxtConfig({
         { name: 'theme-color', content: '#f4e9d4' },
         // Social / Open Graph — also carries the tagline into the static HTML
         { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: 'https://eremitejs.org' },
         {
           property: 'og:title',
           content: 'Eremite.js — Your app, in quiet retreat from the network.',
@@ -43,6 +44,7 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'canonical', href: 'https://eremitejs.org' },
       ],
     },
   },

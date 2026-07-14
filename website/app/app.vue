@@ -2,10 +2,10 @@
 // Single-page marketing site for Eremite.js. ssr: false, statically generated.
 
 const repo = "https://github.com/MaxGfeller/eremite";
-const docs = "https://github.com/MaxGfeller/eremite/tree/main/packages/core";
-const vuePkg = "https://github.com/MaxGfeller/eremite/tree/main/packages/vue";
-const reactPkg =
-    "https://github.com/MaxGfeller/eremite/tree/main/packages/react";
+const docs = "https://docs.eremitejs.org";
+const docsCore = "https://docs.eremitejs.org/api/create-store";
+const docsVue = "https://docs.eremitejs.org/frameworks/vue";
+const docsReact = "https://docs.eremitejs.org/frameworks/react";
 const examples = "https://github.com/MaxGfeller/eremite/tree/main/examples";
 
 const features = [
@@ -66,6 +66,11 @@ const features = [
                         :href="'#install'"
                         class="hidden sm:inline-block px-3 py-2 text-sm text-ink-mute hover:text-bark transition-colors"
                         >Install</a
+                    >
+                    <a
+                        :href="docs"
+                        class="hidden sm:inline-block px-3 py-2 text-sm text-ink-mute hover:text-bark transition-colors"
+                        >Docs</a
                     >
                     <a
                         :href="repo"
@@ -318,13 +323,13 @@ store.mutate.<span class="tok-fn">addTodo</span>({
                         can, while your API stays a plain REST API. The core is
                         framework-agnostic, with official
                         <a
-                            :href="vuePkg"
+                            :href="docsVue"
                             class="text-walnut underline decoration-gold/60 underline-offset-4 hover:decoration-gold"
                             >Vue 3</a
                         >
                         and
                         <a
-                            :href="reactPkg"
+                            :href="docsReact"
                             class="text-walnut underline decoration-gold/60 underline-offset-4 hover:decoration-gold"
                             >React</a
                         >
@@ -424,7 +429,7 @@ store.mutate.<span class="tok-fn">addTodo</span>({
                         <a
                             :href="docs"
                             class="text-ink-soft hover:text-bark transition-colors"
-                            >Docs (core)</a
+                            >Docs</a
                         >
                         <a
                             :href="repo"
@@ -432,12 +437,12 @@ store.mutate.<span class="tok-fn">addTodo</span>({
                             >GitHub</a
                         >
                         <a
-                            :href="vuePkg"
+                            :href="docsVue"
                             class="text-ink-soft hover:text-bark transition-colors"
                             >@eremitejs/vue</a
                         >
                         <a
-                            :href="reactPkg"
+                            :href="docsReact"
                             class="text-ink-soft hover:text-bark transition-colors"
                             >@eremitejs/react</a
                         >
@@ -447,7 +452,7 @@ store.mutate.<span class="tok-fn">addTodo</span>({
                             >Examples</a
                         >
                         <a
-                            :href="docs"
+                            :href="docsCore"
                             class="text-ink-soft hover:text-bark transition-colors"
                             >@eremitejs/core</a
                         >
